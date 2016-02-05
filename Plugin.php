@@ -12,7 +12,7 @@ class Plugin extends PluginBase
   /**
    * @var array plugin dependencies
    */
-  public $require = ['Rainlab.Blog'];
+  public $require = ['RainLab.Blog'];
 
   /**
    * Returns information about this plugin.
@@ -36,12 +36,11 @@ class Plugin extends PluginBase
    */
   public function registerComponents()
   {
-    return []; // Remove this line to activate
-
     return [
-      'Graker\BlogArchive\Components\MyComponent' => 'myComponent',
+      'Graker\BlogArchive\Components\BlogArchive' => 'blogArchive',
     ];
   }
+
 
   /**
    * Registers any back-end permissions used by this plugin.
