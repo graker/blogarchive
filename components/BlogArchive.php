@@ -2,6 +2,10 @@
 
 namespace Graker\BlogArchive\Components;
 
+use Carbon\Carbon;
+use Rainlab\Blog\Models\Post;
+use Cms\Classes\Page;
+
 class BlogArchive extends \Cms\Classes\ComponentBase {
 
   /**
@@ -31,7 +35,6 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
 
   //TODO add partial for month/day to output posts as table lines
   //TODO add partial for year to output 12 tables of posts
-  //TODO add function to prepare post limits (from - to)
 
   /**
    *
@@ -41,7 +44,10 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    * @return array
    */
   public function archivePosts() {
-    return ['Here be dragons', $this->year, $this->month, $this->day, 'shiii'];
+    list($start, $end) = $this->getCurrentRange();
+    $posts = Post::where('published_at', '>=', $start)->where('published_at', '<', $end)->with('categories')->get();
+
+    return $this->preparePosts($posts);
   }
 
 
@@ -50,6 +56,7 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    * Figure out archive parameters and save them to properties
    */
   public function init() {
+    //TODO validate params (or add validation to route)
     $this->year = $this->param($this->property('yearParam'));
     $this->month = $this->param($this->property('monthParam'));
     $this->day = $this->param($this->property('dayParam'));
@@ -82,7 +89,114 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
         'default'           => 'day',
         'type'              => 'string',
       ],
+      'categoryPage' => [
+        'title'       => 'rainlab.blog::lang.settings.posts_category',
+        'description' => 'rainlab.blog::lang.settings.posts_category_description',
+        'type'        => 'dropdown',
+        'default'     => 'blog/category',
+        'group'       => 'Links',
+      ],
+      'postPage' => [
+        'title'       => 'rainlab.blog::lang.settings.posts_post',
+        'description' => 'rainlab.blog::lang.settings.posts_post_description',
+        'type'        => 'dropdown',
+        'default'     => 'blog/post',
+        'group'       => 'Links',
+      ],
     ];
+  }
+
+
+  /**
+   *
+   * Returns pages list for category page selection (copied from blog plugin)
+   *
+   * @return mixed
+   */
+  public function getCategoryPageOptions()
+  {
+    return Page::sortBy('baseFileName')->lists('baseFileName', 'baseFileName');
+  }
+
+  /**
+   *
+   * Returns pages list for blog page selection (copied from blog plugin)
+   *
+   * @return mixed
+   */
+  public function getPostPageOptions()
+  {
+    return Page::sortBy('baseFileName')->lists('baseFileName', 'baseFileName');
+  }
+
+
+  /**
+   *
+   * Prepares data to be output to archive. Each row is array with keys:
+   *  - published_at
+   *  - title (linked to original post)
+   *  - post_url - url to post
+   *  - category (first category or empty string)
+   *  - category_url - url to category
+   *  - TODO comments count
+   *
+   * @param Post[] $posts posts to output
+   * @return array of data prepared to create archive
+   */
+  protected function preparePosts($posts) {
+    $prepared = [];
+
+    foreach ($posts as $post) {
+      $post->setUrl($this->property('postPage'), $this->controller);
+      $category = $post->categories->first();
+      if ($category) {
+        $category->setUrl($this->property('categoryPage'), $this->controller);
+      }
+      $prepared[] = [
+        'published_at' => $post->published_at,
+        'title' => $post->title,
+        'post_url' => $post->url,
+        'category' => ($category) ? $category->name : '',
+        'category_url' => ($category) ? $category->url : '',
+      ];
+    }
+
+    return $prepared;
+  }
+
+
+  /**
+   *
+   * Returns with start and end dates limiting current archive output
+   *
+   * @return Carbon[] - [start, end]
+   */
+  protected function getCurrentRange() {
+    if (!$this->year) {
+      return [];
+    }
+
+    $start = new Carbon();
+    $end = new Carbon();
+
+    if (!$this->month) {
+      //year archive
+      $start->setDate($this->year, 1, 1);
+      $end->setDate(intval($this->year) + 1, 1, 1);
+    } else if (!$this->day) {
+      //month archive
+      $start->setDate($this->year, $this->month, 1);
+      $end->setDate($this->year, intval($this->month) + 1, 1);
+    } else {
+      //day archive
+      $start->setDate($this->year, $this->month, $this->day);
+      $end->setDate($this->year, $this->month, intval($this->day) + 1);
+    }
+
+    $start->setTime(0,0,0);
+    $end->setTime(0,0,0);
+
+    return [$start, $end];
   }
 
 };
