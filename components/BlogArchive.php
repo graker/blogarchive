@@ -35,6 +35,7 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
 
   //TODO add partial for month/day to output posts as table lines
   //TODO add partial for year to output 12 tables of posts
+  //TODO need to validate year/month/day parts prior to use them (got exception when tampering with urls)
 
   /**
    *
