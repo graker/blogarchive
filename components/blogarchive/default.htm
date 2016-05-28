@@ -1,0 +1,16 @@
+<div class="blog-archive">
+    <table class="table">
+        <thead>
+        <th>Published</th>
+        <th>Title</th>
+        <th>Category</th>
+        </thead>
+        {% for post in blogArchive.archivePosts %}
+        <tr>
+            <td>{{ post.published_at }}</td>
+            <td><a href="{{ post.post_url }}">{{ post.title }}</a></td>
+            <td>{% if post.category %}<a href="{{ post.category_url }}">{{ post.category }}</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
