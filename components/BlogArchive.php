@@ -90,6 +90,12 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
         'default'           => 'day',
         'type'              => 'string',
       ],
+      'disqusComments' => [
+        'title'             => 'Disqus Comments',
+        'description'       => 'If checked, archive will have a column for comments count loaded asynchronously from Disqus',
+        'type'              => 'checkbox',
+        'default'           => FALSE,
+      ],
       'categoryPage' => [
         'title'       => 'rainlab.blog::lang.settings.posts_category',
         'description' => 'rainlab.blog::lang.settings.posts_category_description',
@@ -139,7 +145,6 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    *  - post_url - url to post
    *  - category (first category or empty string)
    *  - category_url - url to category
-   *  - TODO comments count
    *
    * @param Post[] $posts posts to output
    * @return array of data prepared to create archive
