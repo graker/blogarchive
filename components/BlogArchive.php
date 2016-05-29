@@ -3,9 +3,11 @@
 namespace Graker\BlogArchive\Components;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Rainlab\Blog\Models\Post;
 use Cms\Classes\Page;
 use App;
+use Redirect;
 
 class BlogArchive extends \Cms\Classes\ComponentBase {
 
@@ -34,9 +36,6 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     ];
   }
 
-  //TODO add partial for month/day to output posts as table lines
-  //TODO add partial for year to output 12 tables of posts
-  //TODO need to validate year/month/day parts prior to use them (got exception when tampering with urls)
 
   /**
    *
@@ -61,10 +60,28 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    * Figure out archive parameters and save them to properties
    */
   public function init() {
-    //TODO validate params (or add validation to route)
     $this->year = $this->param($this->property('yearParam'));
     $this->month = $this->param($this->property('monthParam'));
     $this->day = $this->param($this->property('dayParam'));
+  }
+
+
+  /**
+   * onRun() event implementation
+   *  - Validate year, month and day values, if not valid, go 404
+   */
+  public function onRun() {
+    $year = $this->year;
+    $month = (!$this->month) ? '1' : $this->month;
+    $day = (!$this->day) ? '1' : $this->day;
+
+    if (!ctype_digit($year) || !ctype_digit($month) || !ctype_digit($day)) {
+      return Redirect::to('404');
+    }
+
+    if (!checkdate($month, $day, $year)) {
+      return Redirect::to('404');
+    }
   }
 
 
