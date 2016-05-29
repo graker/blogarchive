@@ -5,6 +5,7 @@ namespace Graker\BlogArchive\Components;
 use Carbon\Carbon;
 use Rainlab\Blog\Models\Post;
 use Cms\Classes\Page;
+use App;
 
 class BlogArchive extends \Cms\Classes\ComponentBase {
 
@@ -46,8 +47,11 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    */
   public function archivePosts() {
     list($start, $end) = $this->getCurrentRange();
-    $posts = Post::where('published_at', '>=', $start)->where('published_at', '<', $end)->with('categories')->get();
-
+    $posts = Post::where('published_at', '>=', $start)
+      ->where('published_at', '<', $end)
+      ->with('categories')
+      ->orderBy('published_at', 'desc')
+      ->get();
     return $this->preparePosts($posts);
   }
 
@@ -147,18 +151,20 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    *  - category_url - url to category
    *
    * @param Post[] $posts posts to output
-   * @return array of data prepared to create archive
+   * @return array of data prepared to create archive, keyed by months
    */
   protected function preparePosts($posts) {
     $prepared = [];
 
     foreach ($posts as $post) {
+      $month = $this->getMonthName($post->published_at);
       $post->setUrl($this->property('postPage'), $this->controller);
       $category = $post->categories->first();
       if ($category) {
         $category->setUrl($this->property('categoryPage'), $this->controller);
       }
-      $prepared[] = [
+      //arrange posts by month to display separate tables for each month in year archives
+      $prepared[$month][] = [
         'published_at' => $post->published_at,
         'title' => $post->title,
         'post_url' => $post->url,
@@ -168,6 +174,19 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     }
 
     return $prepared;
+  }
+  
+
+  /**
+   *
+   * Returns localized month name
+   *
+   * @param string $date
+   * @return string
+   */
+  protected function getMonthName($date = '') {
+    $d = new Carbon($date);
+    return $d->formatLocalized('%B');
   }
 
 

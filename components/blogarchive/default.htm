@@ -1,24 +1,27 @@
 <div class="blog-archive">
-    <table class="table">
-        <thead>
-        <th>Published</th>
-        <th>Title</th>
-        <th>Category</th>
-        {% if blogArchive.property('disqusComments') %}
-            <th>Comments</th>
-        {% endif %}
-        </thead>
-        {% for post in blogArchive.archivePosts %}
-        <tr>
-            <td>{{ post.published_at }}</td>
-            <td><a href="{{ post.post_url }}">{{ post.title }}</a></td>
-            <td>{% if post.category %}<a href="{{ post.category_url }}">{{ post.category }}</a>{% endif %}</td>
+    {% for month, posts in blogArchive.archivePosts %}
+        <h3>{{ month }}</h3>
+        <table class="table">
+            <thead>
+            <th>Published</th>
+            <th>Title</th>
+            <th>Category</th>
             {% if blogArchive.property('disqusComments') %}
-                <td>
-                    <span class="disqus-comment-count" data-disqus-url="{{ post.post_url }}">0</span>
-                </td>
+                <th>Comments</th>
             {% endif %}
-        </tr>
-        {% endfor %}
-    </table>
+            </thead>
+            {% for post in posts %}
+            <tr>
+                <td>{{ post.published_at }}</td>
+                <td><a href="{{ post.post_url }}">{{ post.title }}</a></td>
+                <td>{% if post.category %}<a href="{{ post.category_url }}">{{ post.category }}</a>{% endif %}</td>
+                {% if blogArchive.property('disqusComments') %}
+                    <td>
+                        <span class="disqus-comment-count" data-disqus-url="{{ post.post_url }}">0</span>
+                    </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
 </div>

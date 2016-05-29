@@ -2,6 +2,9 @@
 
 use Backend;
 use System\Classes\PluginBase;
+use Carbon\Carbon;
+use Lang;
+use App;
 
 /**
  * BlogArchive Plugin Information File
@@ -43,20 +46,23 @@ class Plugin extends PluginBase
 
 
   /**
+   * Setup locale to use for month names
+   */
+  public function boot() {
+    $localeCode = App::getLocale();
+    Carbon::setLocale($localeCode);
+    setlocale(LC_TIME, $localeCode . '_' . strtoupper($localeCode) . '.UTF-8');
+  }
+
+
+  /**
    * Registers any back-end permissions used by this plugin.
    *
    * @return array
    */
   public function registerPermissions()
   {
-    return []; // Remove this line to activate
-
-    return [
-      'graker.blogarchive.some_permission' => [
-        'tab' => 'BlogArchive',
-        'label' => 'Some permission'
-      ],
-    ];
+    return [];
   }
 
   /**
@@ -66,17 +72,7 @@ class Plugin extends PluginBase
    */
   public function registerNavigation()
   {
-    return []; // Remove this line to activate
-
-    return [
-      'blogarchive' => [
-        'label'       => 'BlogArchive',
-        'url'         => Backend::url('graker/blogarchive/mycontroller'),
-        'icon'        => 'icon-leaf',
-        'permissions' => ['graker.blogarchive.*'],
-        'order'       => 500,
-      ],
-    ];
+    return [];
   }
 
 }
