@@ -68,9 +68,66 @@ class Drupal6ImportPreprocessor extends Command {
       return;
     }
 
-
-    $this->info('CSV file is parsed. Processing...');
+    $rows = $csv->fetchAll();
+    array_shift($rows); // remove header
+    $count = count($rows);
+    $this->info("CSV file is parsed. It has $count rows. Processing them now...");
+    foreach ($rows as &$row) {
+      $this->processRow($row);
+    }
+    $this->info('Processing finished. Saving...');
   }
+
+
+  /**
+   *
+   * Processes one row of CSV data
+   *
+   * @param array $row the row to be processed and changed
+   */
+  protected function processRow(&$row) {
+    $this->checkTeaser($row);
+    $this->getLink($row);
+  }
+
+
+  /**
+   *
+   * Checks if this row has teaser equal to content
+   * Remove the teaser in this case (i.e. no excerpt needed)
+   *
+   * @param array $row the row to be processed and changed
+   */
+  protected function checkTeaser(&$row) {
+    if ($row[$this->content_index] == $row[$this->teaser_index]) {
+      $row[$this->teaser_index] = '';
+      $this->output->writeln("Removing teaser for node $row[0]");
+    }
+  }
+
+
+  /**
+   *
+   * Parses node's slug from the link field given
+   * In D6 Views link comes as an anchor tag with full URL in href attribute
+   * For slug, we should get the last part of the URL, after last / symbol
+   *
+   * @param array $row the row to be processed and changed
+   */
+  protected function getLink(&$row) {
+    $http_pos = strpos($row[$this->link_index], 'http://');
+    if (!$http_pos) {
+      $this->error("Error parsing link for node $row[0]");
+      return ;
+    }
+    $str = substr($row[$this->link_index], $http_pos);
+    $close_pos = strpos($str, '"');
+    $str = substr($str, $close_pos - 1);
+    $parts = explode('/', $str);
+    $link = array_pop($parts);
+    $row[$this->link_index] = $link;
+  }
+
 
   /**
    * Get the console command arguments.
@@ -117,7 +174,7 @@ class Drupal6ImportPreprocessor extends Command {
     //save what we found
     $position = $pos;
     if ($found) {
-      $this->output->writeln("$column content was found in position $pos");
+      $this->output->writeln("$column was found at column $pos");
     } else {
       $this->error("Can't find column $column");
     }
