@@ -8,6 +8,8 @@ namespace Graker\BlogArchive\Console;
 
 use Illuminate\Console\Command;
 use League\Csv\Reader;
+use League\Csv\Writer;
+use SplTempFileObject;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
@@ -68,6 +70,7 @@ class Drupal6ImportPreprocessor extends Command {
       return;
     }
 
+    //process rows
     $rows = $csv->fetchAll();
     array_shift($rows); // remove header
     $count = count($rows);
@@ -75,7 +78,13 @@ class Drupal6ImportPreprocessor extends Command {
     foreach ($rows as &$row) {
       $this->processRow($row);
     }
+
+    //save updated rows
     $this->info('Processing finished. Saving...');
+    $writer = Writer::createFromFileObject(new SplTempFileObject);
+    $writer->insertOne($first_row);
+    $writer->insertAll($rows);
+    file_put_contents($this->argument('output_file'), $writer->__toString());
   }
 
 
@@ -115,14 +124,14 @@ class Drupal6ImportPreprocessor extends Command {
    * @param array $row the row to be processed and changed
    */
   protected function getLink(&$row) {
-    $http_pos = strpos($row[$this->link_index], 'http://');
-    if (!$http_pos) {
+    $start_pos = strpos($row[$this->link_index], '"');
+    if (!$start_pos) {
       $this->error("Error parsing link for node $row[0]");
       return ;
     }
-    $str = substr($row[$this->link_index], $http_pos);
+    $str = substr($row[$this->link_index], $start_pos+1);
     $close_pos = strpos($str, '"');
-    $str = substr($str, $close_pos - 1);
+    $str = substr($str, 0, $close_pos);
     $parts = explode('/', $str);
     $link = array_pop($parts);
     $row[$this->link_index] = $link;
