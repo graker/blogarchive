@@ -56,6 +56,15 @@ class Plugin extends PluginBase
 
 
   /**
+   * register() method implementation
+   *  - register console commands here
+   */
+  public function register() {
+    $this->registerConsoleCommand('blogarchive.d6_preprocess_import', 'Graker\BlogArchive\Console\Drupal6ImportPreprocessor');
+  }
+
+
+  /**
    * Registers any back-end permissions used by this plugin.
    *
    * @return array
