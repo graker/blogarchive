@@ -45,6 +45,12 @@ class Drupal6ImportPreprocessor extends Command {
 
 
   /**
+   * @var int position of categories column
+   */
+  protected $categories_index = 0;
+
+
+  /**
    * Execute the console command.
    * @return void
    */
@@ -67,6 +73,9 @@ class Drupal6ImportPreprocessor extends Command {
       return;
     }
     if (!$this->findColumn($first_row, 'link', $this->link_index)) {
+      return;
+    }
+    if (!$this->findColumn($first_row, 'categories', $this->categories_index)) {
       return;
     }
 
@@ -97,6 +106,7 @@ class Drupal6ImportPreprocessor extends Command {
   protected function processRow(&$row) {
     $this->checkTeaser($row);
     $this->getLink($row);
+    $this->processCategories($row);
   }
 
 
@@ -135,6 +145,17 @@ class Drupal6ImportPreprocessor extends Command {
     $parts = explode('/', $str);
     $link = array_pop($parts);
     $row[$this->link_index] = $link;
+  }
+
+
+  /**
+   *
+   * Replaces standard D6 ", " delimiter in categories with "|"
+   *
+   * @param array $row the row to be processed and changed
+   */
+  protected function processCategories(&$row) {
+    $row[$this->categories_index] = str_replace(', ', '|', $row[$this->categories_index]);
   }
 
 
