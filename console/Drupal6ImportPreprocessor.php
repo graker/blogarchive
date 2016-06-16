@@ -123,6 +123,9 @@ class Drupal6ImportPreprocessor extends Command {
     if ($this->file_links) {
       $this->processFileLinks($row);
     }
+    if ($this->option('lightbox-to-magnific')) {
+      $this->lightboxToMagnific($row);
+    }
   }
 
 
@@ -235,6 +238,18 @@ class Drupal6ImportPreprocessor extends Command {
 
 
   /**
+   *
+   * Replaces rel="lightbox" with class="magnific" for content and teaser
+   *
+   * @param $row
+   */
+  protected function lightboxToMagnific(&$row) {
+    $row[$this->content_index] = str_replace('rel="lightbox"', 'class="magnific"', $row[$this->content_index]);
+    $row[$this->teaser_index] = str_replace('rel="lightbox"', 'class="magnific"', $row[$this->teaser_index]);
+  }
+
+
+  /**
    * Get the console command arguments.
    * @return array
    */
@@ -261,6 +276,7 @@ class Drupal6ImportPreprocessor extends Command {
         'Imported files folder path (e.g. /storage/app/old-files, no trailing slash). Set to move file links in content to a new location.',
         NULL,
       ],
+      [ 'lightbox-to-magnific', NULL, InputOption::VALUE_NONE, 'If set, rel="lightbox" will be replaced with class="magnific"'],
     ];
   }
 
