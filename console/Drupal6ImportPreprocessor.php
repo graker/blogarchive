@@ -7,6 +7,7 @@
 namespace Graker\BlogArchive\Console;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 use League\Csv\Reader;
 use League\Csv\Writer;
 use SplTempFileObject;
@@ -51,6 +52,12 @@ class Drupal6ImportPreprocessor extends Command {
 
 
   /**
+   * @var string path where to place new file links
+   */
+  protected $file_links = '';
+
+
+  /**
    * Execute the console command.
    * @return void
    */
@@ -80,6 +87,7 @@ class Drupal6ImportPreprocessor extends Command {
     }
 
     //process rows
+    $this->file_links = $this->option('files');
     $rows = $csv->fetchAll();
     array_shift($rows); // remove header
     $count = count($rows);
@@ -89,11 +97,16 @@ class Drupal6ImportPreprocessor extends Command {
     }
 
     //save updated rows
+    $output_file = $this->argument('output_file');
     $this->info('Processing finished. Saving...');
     $writer = Writer::createFromFileObject(new SplTempFileObject);
     $writer->insertOne($first_row);
     $writer->insertAll($rows);
-    file_put_contents($this->argument('output_file'), $writer->__toString());
+    if (!file_put_contents($output_file, $writer->__toString())) {
+      $this->error("Failed to write to $output_file");
+    } else {
+      $this->output->writeln("Processed CSV is written to $output_file");
+    }
   }
 
 
@@ -107,6 +120,9 @@ class Drupal6ImportPreprocessor extends Command {
     $this->checkTeaser($row);
     $this->getLink($row);
     $this->processCategories($row);
+    if ($this->file_links) {
+      $this->processFileLinks($row);
+    }
   }
 
 
@@ -160,6 +176,65 @@ class Drupal6ImportPreprocessor extends Command {
 
 
   /**
+   *
+   * Replaces sites/default/files with a path in $this->file_links for each anchor's href and img's src
+   * Applies both for teaser and content
+   *
+   * @param $row
+   */
+  protected function processFileLinks(&$row) {
+    $this->replaceLinks($row[$this->content_index]);
+    $this->replaceLinks($row[$this->teaser_index]);
+  }
+
+
+  /**
+   *
+   * Replaces links in html given from sites/default/files to path in $this->file_links
+   *
+   * @param string $html
+   */
+  protected function replaceLinks(&$html) {
+    if (!$html) {
+      //for empty teasers string will be empty
+      return ;
+    }
+    $old_files = '"/sites/default/files';
+    $html = str_replace($old_files, '"' . $this->file_links, $html);
+//    Proper way needs more work (wrap $html with div, save this div only, then remove wrapping)
+//    $old_files = '/sites/default/files';
+//    //disable errors for broken html
+//    libxml_use_internal_errors(true);
+//    $dom = new \DOMDocument();
+//    $dom->encoding = 'UTF-8';
+//    $dom->loadHTML($html);
+//
+//    //rewrite links
+//    foreach ($dom->getElementsByTagName('a') as $tag) {
+//      $href = $tag->getAttribute('href');
+//      if (substr($href, 0, strlen($old_files)) === $old_files) {
+//        $this->output->writeln("Replacing " . $href . " link");
+//        $href = str_replace($old_files, $this->file_links, $href);
+//        $tag->setAttribute('href', $href);
+//      }
+//    }
+//    //rewrite images
+//    foreach ($dom->getElementsByTagName('img') as $tag) {
+//      $src = $tag->getAttribute('src');
+//      if (substr($src, 0, strlen($old_files)) === $old_files) {
+//        $this->output->writeln("Replacing " . $src . " image");
+//        $src = str_replace($old_files, $this->file_links, $src);
+//        $tag->setAttribute('src', $src);
+//      }
+//    }
+//    $html = '';
+//    foreach ($dom->childNodes as $childNode) {
+//      $html .= $dom->ownerDocument->saveHTML($childNode)
+//    }
+  }
+
+
+  /**
    * Get the console command arguments.
    * @return array
    */
@@ -178,7 +253,15 @@ class Drupal6ImportPreprocessor extends Command {
    */
   protected function getOptions()
   {
-    return [];
+    return [
+      [
+        'files',
+        NULL,
+        InputOption::VALUE_OPTIONAL,
+        'Imported files folder path (e.g. /storage/app/old-files, no trailing slash). Set to move file links in content to a new location.',
+        NULL,
+      ],
+    ];
   }
 
 
