@@ -202,38 +202,37 @@ class Drupal6ImportPreprocessor extends Command {
       //for empty teasers string will be empty
       return ;
     }
-    $old_files = '"/sites/default/files';
-    $html = str_replace($old_files, '"' . $this->file_links, $html);
-//    Proper way needs more work (wrap $html with div, save this div only, then remove wrapping)
-//    $old_files = '/sites/default/files';
-//    //disable errors for broken html
-//    libxml_use_internal_errors(true);
-//    $dom = new \DOMDocument();
-//    $dom->encoding = 'UTF-8';
-//    $dom->loadHTML($html);
-//
-//    //rewrite links
-//    foreach ($dom->getElementsByTagName('a') as $tag) {
-//      $href = $tag->getAttribute('href');
-//      if (substr($href, 0, strlen($old_files)) === $old_files) {
-//        $this->output->writeln("Replacing " . $href . " link");
-//        $href = str_replace($old_files, $this->file_links, $href);
-//        $tag->setAttribute('href', $href);
-//      }
-//    }
-//    //rewrite images
-//    foreach ($dom->getElementsByTagName('img') as $tag) {
-//      $src = $tag->getAttribute('src');
-//      if (substr($src, 0, strlen($old_files)) === $old_files) {
-//        $this->output->writeln("Replacing " . $src . " image");
-//        $src = str_replace($old_files, $this->file_links, $src);
-//        $tag->setAttribute('src', $src);
-//      }
-//    }
-//    $html = '';
-//    foreach ($dom->childNodes as $childNode) {
-//      $html .= $dom->ownerDocument->saveHTML($childNode)
-//    }
+    $old_files = '/sites/default/files';
+    //wrap html
+    $html = '<div id="post-import-wrapper">' . $html . '</div>';
+    //disable errors for broken html
+    libxml_use_internal_errors(true);
+    $dom = new \DOMDocument();
+    $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+
+    //rewrite links
+    foreach ($dom->getElementsByTagName('a') as $tag) {
+      $href = $tag->getAttribute('href');
+      if (substr($href, 0, strlen($old_files)) === $old_files) {
+        $this->output->writeln("Replacing " . $href . " link");
+        $href = str_replace($old_files, $this->file_links, $href);
+        $tag->setAttribute('href', $href);
+      }
+    }
+    //rewrite images
+    foreach ($dom->getElementsByTagName('img') as $tag) {
+      $src = $tag->getAttribute('src');
+      if (substr($src, 0, strlen($old_files)) === $old_files) {
+        $this->output->writeln("Replacing " . $src . " image");
+        $src = str_replace($old_files, $this->file_links, $src);
+        $tag->setAttribute('src', $src);
+      }
+    }
+    $post_wrapper = $dom->getElementById('post-import-wrapper');
+    $html = $dom->saveHTML($post_wrapper);
+    //remove wrapper
+    $html = str_replace('<div id="post-import-wrapper">', '', $html);
+    $html = mb_substr($html, 0, mb_strlen($html)-6);
   }
 
 
