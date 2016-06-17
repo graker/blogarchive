@@ -120,12 +120,7 @@ class Drupal6ImportPreprocessor extends Command {
     $this->checkTeaser($row);
     $this->getLink($row);
     $this->processCategories($row);
-    if ($this->file_links) {
-      $this->processFileLinks($row);
-    }
-    if ($this->option('lightbox-to-magnific')) {
-      $this->lightboxToMagnific($row);
-    }
+    $this->processHTML($row);
   }
 
 
@@ -180,35 +175,85 @@ class Drupal6ImportPreprocessor extends Command {
 
   /**
    *
-   * Replaces sites/default/files with a path in $this->file_links for each anchor's href and img's src
-   * Applies both for teaser and content
+   * Process all HTML changes (teaser and content)
    *
    * @param $row
    */
-  protected function processFileLinks(&$row) {
-    $this->replaceLinks($row[$this->content_index]);
-    $this->replaceLinks($row[$this->teaser_index]);
+  protected function processHTML(&$row) {
+    if ($row[$this->content_index]) {
+      $this->processHTMLString($row[$this->content_index]);
+    }
+    if ($row[$this->teaser_index]) {
+      $this->processHTMLString($row[$this->teaser_index]);
+    }
   }
 
 
   /**
    *
-   * Replaces links in html given from sites/default/files to path in $this->file_links
+   * Creates dom object for $html given and launches each enabled process for this dom
+   * Then processed dom is dumped back to $html given
    *
    * @param string $html
    */
-  protected function replaceLinks(&$html) {
-    if (!$html) {
-      //for empty teasers string will be empty
-      return ;
+  protected function processHTMLString(&$html) {
+    $dom = $this->createDOM($html);
+
+    //processing DOM
+    if ($this->file_links) {
+      $this->processFileLinks($dom);
     }
-    $old_files = '/sites/default/files';
+    if ($this->option('lightbox-to-magnific')) {
+      $this->lightboxToMagnific($dom);
+    }
+
+    $html = $this->dumpDOM($dom);
+  }
+
+
+  /**
+   *
+   * Creates DOMDocument for html given and returns it to use in further changes
+   *
+   * @param $html
+   * @return \DOMDocument
+   */
+  protected function createDOM($html) {
     //wrap html
     $html = '<div id="post-import-wrapper">' . $html . '</div>';
     //disable errors for broken html
     libxml_use_internal_errors(true);
     $dom = new \DOMDocument();
     $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+    return $dom;
+  }
+
+
+  /**
+   *
+   * Dumps processed DOMDocument back to string representation and returns it
+   *
+   * @param \DOMDocument $dom
+   * @return string
+   */
+  protected function dumpDOM($dom) {
+    $post_wrapper = $dom->getElementById('post-import-wrapper');
+    $html = $dom->saveHTML($post_wrapper);
+    //remove wrapper
+    $html = str_replace('<div id="post-import-wrapper">', '', $html);
+    $html = mb_substr($html, 0, mb_strlen($html)-6);
+    return $html;
+  }
+
+
+  /**
+   *
+   * Replaces sites/default/files with a path in $this->file_links for each anchor's href and img's src
+   *
+   * @param \DOMDocument $dom
+   */
+  protected function processFileLinks($dom) {
+    $old_files = '/sites/default/files';
 
     //rewrite links
     foreach ($dom->getElementsByTagName('a') as $tag) {
@@ -219,6 +264,7 @@ class Drupal6ImportPreprocessor extends Command {
         $tag->setAttribute('href', $href);
       }
     }
+
     //rewrite images
     foreach ($dom->getElementsByTagName('img') as $tag) {
       $src = $tag->getAttribute('src');
@@ -228,23 +274,22 @@ class Drupal6ImportPreprocessor extends Command {
         $tag->setAttribute('src', $src);
       }
     }
-    $post_wrapper = $dom->getElementById('post-import-wrapper');
-    $html = $dom->saveHTML($post_wrapper);
-    //remove wrapper
-    $html = str_replace('<div id="post-import-wrapper">', '', $html);
-    $html = mb_substr($html, 0, mb_strlen($html)-6);
   }
 
 
   /**
    *
-   * Replaces rel="lightbox" with class="magnific" for content and teaser
+   * Replaces rel="lightbox" with class="magnific"
    *
-   * @param $row
+   * @param \DOMDocument $dom
    */
-  protected function lightboxToMagnific(&$row) {
-    $row[$this->content_index] = str_replace('rel="lightbox"', 'class="magnific"', $row[$this->content_index]);
-    $row[$this->teaser_index] = str_replace('rel="lightbox"', 'class="magnific"', $row[$this->teaser_index]);
+  protected function lightboxToMagnific($dom) {
+    foreach ($dom->getElementsByTagName('a') as $link) {
+      if ($link->getAttribute('rel') == 'lightbox') {
+        $link->removeAttribute('rel');
+        $link->setAttribute('class', 'magnific');
+      }
+    }
   }
 
 
