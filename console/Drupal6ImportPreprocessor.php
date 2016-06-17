@@ -7,7 +7,6 @@
 namespace Graker\BlogArchive\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 use League\Csv\Reader;
 use League\Csv\Writer;
 use SplTempFileObject;
@@ -55,6 +54,20 @@ class Drupal6ImportPreprocessor extends Command {
    * @var string path where to place new file links
    */
   protected $file_links = '';
+
+
+  /**
+   * @var array of 'code tag' => 'language-lng' (or '' if no specific language)
+   */
+  protected $code_tags = [
+    'code' => '',
+    'javascript' => 'lang-js',
+    'cpp' => 'lang-cpp',
+    'php' => 'lang-php',
+    'drupal6' => 'lang-php',
+    'qt' => 'lang-cpp',
+    'bash' => 'lang-bsh',
+  ];
 
 
   /**
@@ -304,18 +317,41 @@ class Drupal6ImportPreprocessor extends Command {
    * @param \DOMDocument $dom
    */
   protected function replaceCodeWithPrettify($dom) {
-    $code_tags = array();
+    foreach ($this->code_tags as $code_tag => $language_class) {
+      $this->processCodeTag($dom, $code_tag, $language_class);
+    }
+  }
 
+
+  /**
+   *
+   * Process one code tag to be prettified
+   *
+   * @param \DOMDocument $dom - dom being processed
+   * @param string $code_tag - code tag name
+   * @param string $language_class - class to tip Prettify on the language used
+   */
+  protected function processCodeTag($dom, $code_tag, $language_class) {
+    $code_tags = array();
     //get code tags for post
-    foreach ($dom->getElementsByTagName('code') as $tag) {
+    foreach ($dom->getElementsByTagName($code_tag) as $tag) {
       $code_tags[] = $tag;
     }
 
     if (empty($code_tags)) {
-      return ;
+      return;
     }
     foreach ($code_tags as $tag) {
       $parent = $tag->parentNode;
+      if ($code_tag != 'code') {
+        //replace $code_tag with <code class="$language_class">
+        $new_tag = $dom->createElement('code');
+        foreach ($tag->childNodes as $child) {
+          $new_tag->appendChild($child->cloneNode(true));
+        }
+        $parent->replaceChild($new_tag, $tag);
+        $tag = $new_tag;
+      }
       if ($parent->nodeName == 'p') {
         $tag = $parent->removeChild($tag);
         $newParent = $parent->parentNode;
@@ -324,6 +360,7 @@ class Drupal6ImportPreprocessor extends Command {
       }
       //wrap code element with <pre></pre>
       $element = $dom->createElement('pre');
+      $element->setAttribute('class', 'prettyprint ' . $language_class);
       $parent->replaceChild($element, $tag);
       $element->appendChild($tag);
       //delete brs in code (if any)
