@@ -206,6 +206,9 @@ class Drupal6ImportPreprocessor extends Command {
     if ($this->option('lightbox-to-magnific')) {
       $this->lightboxToMagnific($dom);
     }
+    if ($this->option('code-to-prettify')) {
+      $this->replaceCodeWithPrettify($dom);
+    }
 
     $html = $this->dumpDOM($dom);
   }
@@ -294,6 +297,50 @@ class Drupal6ImportPreprocessor extends Command {
 
 
   /**
+   *
+   * Replaces code tags with prettify markup,
+   * also moves code tags outside of the paragraphs (or prettify won't work)
+   *
+   * @param \DOMDocument $dom
+   */
+  protected function replaceCodeWithPrettify($dom) {
+    $code_tags = array();
+
+    //get code tags for post
+    foreach ($dom->getElementsByTagName('code') as $tag) {
+      $code_tags[] = $tag;
+    }
+
+    if (empty($code_tags)) {
+      return ;
+    }
+    foreach ($code_tags as $tag) {
+      $parent = $tag->parentNode;
+      if ($parent->nodeName == 'p') {
+        $tag = $parent->removeChild($tag);
+        $newParent = $parent->parentNode;
+        $newParent->insertBefore($tag, $parent->nextSibling);
+        $parent = $newParent;
+      }
+      //wrap code element with <pre></pre>
+      $element = $dom->createElement('pre');
+      $parent->replaceChild($element, $tag);
+      $element->appendChild($tag);
+      //delete brs in code (if any)
+      $brs = array();
+      foreach ($tag->childNodes as $childNode) {
+        if ($childNode->nodeName == 'br') {
+          $brs[] = $childNode;
+        }
+      }
+      foreach ($brs as $br) {
+        $tag->removeChild($br);
+      }
+    }
+  }
+
+
+  /**
    * Get the console command arguments.
    * @return array
    */
@@ -321,6 +368,7 @@ class Drupal6ImportPreprocessor extends Command {
         NULL,
       ],
       [ 'lightbox-to-magnific', NULL, InputOption::VALUE_NONE, 'If set, rel="lightbox" will be replaced with class="magnific"'],
+      [ 'code-to-prettify', NULL, InputOption::VALUE_NONE, 'If set, code tags will be replaced with prettify markup'],
     ];
   }
 
