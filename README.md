@@ -17,14 +17,68 @@ in a table manner, sorted by published date and grouped by months.
 
 ## Drupal6 export processor
 
-The plugin also adds a command for artisan: blogarchive:d6_preprocess_import, it is supposed to process nodes export from Drupal's views_data_export to be imported in the Rainlab.Blog model. Check -h to find out command options and arguments.
-This command can be used to preprocess CSV with blog posts import. I created it for my own migration from Drupal 6 to OctoberCMS but I think maybe this command could become a starting point for someone else's migration.
+When I was migrating data from Drupal 6 to October, I've created **blogarchive:d6_preprocess_import** artisan command to preprocess CSV with exported nodes. 
+While this command is not nearly "migration out of the box", it might be a starting point for someone, so I share it here with a showt manual following.
 
-Main features:
+### Requirements
 
-* remove teaser text if it is equal to content text (to avoid saving excerpts in this case) as D6 would save teaser equal to node's content in this case
-* replace /sites/default/files/* paths with path to a new directory containing legacy files. Replacements are implemented for anchor hrefs and image srcs
-* replace anchor tag with node's link to the node with the last part of node's path (to be used as slug)
-* replace (optionally) lightbox links with magnific
-* replace (optionally) code tags (and some other) to support Prettify script for code decoration
+To migrate from Drupal 6 nodes to Rainlab.Blog posts you'll need to export nodes from D6 to CSV file. 
+The best way to do this is to generate CSV automatically with [Views Data Export](http://https://www.drupal.org/project/views_data_export) module. 
+You'll need to export columns:
+
+* nid
+* title
+* content html
+* teaser
+* link to the node (just use standard views field generating the link)
+* created date
+* updated date
+* taxonomy terms
+
+When the file is ready, you can process it with the command prior to importing data to October. Check out arguments and options with:
+
+php artisan blogarchive:d6_preprocess_import -h
+
+For the command to work properly you CSV file must meet some requirements:
+
+* first row must be of column titles
+* content column title must be Content
+* teaser column title must be Teaser
+* link column title must be Link
+* taxonomy terms column title must be Categories
+
+Columns order doesn't matter, the script will find columns by titles.
+
+For now, the command can help you with following
+
+### Remove teasers if same as content
+
+By default for nodes not having a teaser Drupal 6 would export a copy of full content field. But we don't want to save full content field to a new post's Excerpt.
+So the command will remove (replace with empty strings) teasers when they are equal to this node's full content.
+ 
+### Extract slugs from node links
+
+While Drupal 6 nodes could have complex path aliases, in October's blog posts slugs shouldn't contain variable parts. So the command will pick href attribute from 
+the link field and save the part after last slash to be used as a slug.
+
+### Fix paths to uploaded files
+ 
+The command will scan full content and teaser columns for anchor and image tags containing links to /sites/default/files/\*. 
+For each such tag, the link will be replaced with a new path you provided in --file option. So you can just copy sites/default/files contents 
+from the old site to new path and all links to images and other documents will be available after migration.
+
+### Convert Lightbox links to Magnific
+
+Optional replacing rel="lightbox" with class="magnific" for all lightbox anchor tags. Use --lightbox-to-magnific option to enable.
+
+### Prepare code tags for Prettify
+
+This option will modify code samples in content to use [Prettify](https://github.com/google/code-prettify) script which installs with October. 
+Use --code-to-prettify to enable. Then the command would look for &lt;code&gt; tags, remove &lt;br/&gt; from this tag's content. 
+If &lt;code&gt; tag is found inside of &lt;p&gt;, it will be moved outside after the parent (otherwise, Prettify won't work).
+Then the tag will be wrapped with &lt;pre class="prettyprint"&gt;&lt;/pre&gt; so it can be prettified.
+&lt;javascript&gt;, &lt;cpp&gt;, &lt;php&gt;, &lt;drupal6&gt;, &lt;qt&gt; and &lt;bash&gt; tags will be transformed to &lt;code&gt; tag with corresponding language class and then prettified too. 
+
+That's it. After the command is finished working try to import the resulting file in October.
+
 
