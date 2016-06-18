@@ -2,8 +2,10 @@
 
 use Cms\Classes\ComponentBase;
 use Cms\Classes\Page;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use RainLab\Blog\Models\Post as Post;
+use Cache;
 
 class RandomPosts extends ComponentBase
 {
@@ -61,11 +63,17 @@ class RandomPosts extends ComponentBase
    *
    * Returns array of posts_count random posts either from DB or cache
    *
-   * @return Post[]
+   * @return Collection
    */
   public function posts() {
-    //TODO add caching
-    $posts = $this->getPosts();
+    $posts = [];
+    if ($this->property('cacheLifetime')) {
+      $posts = Cache::get('blogarchive_random_posts');
+    }
+
+    if (empty($posts)) {
+      $posts = $this->getPosts();
+    }
     return $posts;
   }
 
@@ -74,7 +82,7 @@ class RandomPosts extends ComponentBase
    *
    * Returns array of post_count random posts
    *
-   * @return Post[]
+   * @return Collection
    */
   protected function getPosts() {
     $count = $this->property('postsCount');
@@ -86,7 +94,23 @@ class RandomPosts extends ComponentBase
       $post->url = $post->setUrl($this->property('postPage'), $this->controller);
     }
 
+    $this->cachePosts($posts);
+
     return $posts;
+  }
+
+
+  /**
+   *
+   * Cache posts if caching is enabled
+   *
+   * @param Collection $posts
+   */
+  protected function cachePosts($posts) {
+    $cache = $this->property('cacheLifetime');
+    if ($cache) {
+      Cache::put('blogarchive_random_posts', $posts->toArray(), $cache);
+    }
   }
 
 }
