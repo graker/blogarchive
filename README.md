@@ -18,7 +18,7 @@ in a table manner, sorted by published date and grouped by months.
 ## Drupal6 export processor
 
 When I was migrating data from Drupal 6 to October, I've created **blogarchive:d6_preprocess_import** artisan command to preprocess CSV with exported nodes. 
-While this command is not nearly "migration out of the box", it might be a starting point for someone, so I share it here with a showt manual following.
+While this command not nearly is "the migration out of the box", it might be a starting point for someone, so I share it here with a short manual following.
 
 ### Requirements
 
