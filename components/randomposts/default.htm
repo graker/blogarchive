@@ -1,0 +1,9 @@
+<ul class="random-posts">
+    {% for post in __SELF__.posts() %}
+        <li>
+            <a href="{{ post.url }}">{{ post.title }}</a>
+        </li>
+    {% else %}
+        You have not created any posts yet
+    {% endfor %}
+</ul>

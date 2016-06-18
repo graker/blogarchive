@@ -41,6 +41,7 @@ class Plugin extends PluginBase
   {
     return [
       'Graker\BlogArchive\Components\BlogArchive' => 'blogArchive',
+      'Graker\BlogArchive\Components\RandomPosts' => 'randomPosts',
     ];
   }
 
