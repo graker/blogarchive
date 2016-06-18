@@ -15,6 +15,15 @@ in a table manner, sorted by published date and grouped by months.
 * If your blog comments are implemented with Disqus, check the Disqus Comments box to add comments count column to the archive table
 * Output the component on your page as usual
 
+### Random posts component
+
+Also there is Random Posts component which you can use to display some random post titles (or more than titles if you override default markup). 
+Just add the component to a page or partial, set up number of posts to show, cache lifetime and blog post page name.
+Note though, that for big databases selects with random sorting can slow down your site so use with caution and make use of cache lifetime.
+Also note that due to the use of RAND() function for sorting, the component would work with MySQL database only. 
+To use component with other databases, you'd need to rewrite orderBy() call. 
+And apparently there's no general DB-independent method in Laravel to do random sorting.
+
 ## Drupal6 export processor
 
 When I was migrating data from Drupal 6 to October, I've created **blogarchive:d6_preprocess_import** artisan command to preprocess CSV with exported nodes. 
