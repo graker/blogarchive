@@ -70,6 +70,10 @@ So the command will remove (replace with empty strings) teasers when they are eq
 While Drupal 6 nodes could have complex path aliases, in October's blog posts slugs shouldn't contain variable parts. So the command will pick href attribute from 
 the link field and save the part after last slash to be used as a slug.
 
+### Prepare categories
+
+By default, Drupal 6 Views would export tags separated by commas, while blog's import expects them to be separated by pipes. The command would replace commas with pipes.
+
 ### Fix paths to uploaded files
  
 The command will scan full content and teaser columns for anchor and image tags containing links to /sites/default/files/\*. 
