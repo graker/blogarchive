@@ -62,8 +62,8 @@ For now, the command can help you with following
 
 ### Remove teasers if same as content
 
-By default for nodes not having a teaser Drupal 6 would export a copy of full content field. But we don't want to save full content field to a new post's Excerpt.
-So the command will remove (replace with empty strings) teasers when they are equal to this node's full content.
+By default for nodes not having a teaser Drupal 6 would export a copy of full content field. But we don't want to save full content field to excerpt, we want it blank in this case.
+So the command will remove (replace with empty strings) teasers when they are equal to node's full content.
  
 ### Extract slugs from node links
 
