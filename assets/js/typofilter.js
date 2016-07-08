@@ -44,12 +44,8 @@
     '<code[^>]*>' : '<\\/code>',
     '<!--' : '-->',
     '<\\?php' : '\\?>',
-    '<drupal6>' : '<\\/drupal6>',
-    '<php>' : '<\\/php>',
-    '<cpp>' : '<\\/cpp>',
     '<object>' : '<\\/object>',
-    '<javascript>' : '<\\/javascript>',
-    '<qt>' : '<\\/qt>'
+    '<iframe>' : '<\\/iframe>'
   };
 
   Typographus_Lite_UTF8.safeblock_storage = [];
