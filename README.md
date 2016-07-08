@@ -15,6 +15,9 @@ in a table manner, sorted by published date and grouped by months.
 * If your blog comments are implemented with Disqus, check the Disqus Comments box to add comments count column to the archive table
 * Output the component on your page as usual
 
+Note that to output translated month names via `Carbon` in the archive table, the component will use `setlocale()` to set the application locale.
+You can disable this feature in `config/config.php` file of the plugin (set `setLocaleForCarbon` value to `FALSE` in the overridden config file).
+
 ### Random posts component
 
 Also there is Random Posts component which you can use to display some random post titles (or more than titles if you override default markup). 
@@ -23,6 +26,13 @@ Note though, that for big databases selects with random sorting can slow down yo
 Also note that due to the use of RAND() function for sorting, the component would work with MySQL database only. 
 To use component with other databases, you'd need to rewrite orderBy() call. 
 And apparently there's no general DB-independent method in Laravel to do random sorting.
+
+### Typofilter integration
+
+To perform some typographical transforms and replacements, [Typofilter.js](https://github.com/graker/typofilter.js) is integrated in this plugin. 
+The button (with a magic wand icon) will be added to Markdown editor for blog posts automatically.
+
+You can disable this button in `config/config.php` file of the plugin (set `addTypofilterToMarkdown` value to `FALSE` in the overridden config file).
 
 ## Drupal6 export processor
 

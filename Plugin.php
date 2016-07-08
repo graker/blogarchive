@@ -7,7 +7,7 @@ use Carbon\Carbon;
 use Lang;
 use App;
 use Event;
-use Log;
+use Config;
 
 /**
  * BlogArchive Plugin Information File
@@ -54,7 +54,6 @@ class Plugin extends PluginBase
    */
   public function boot() {
     $this->setLocaleForDates();
-    //TODO introduce settings for both this matters
     $this->extendBlogPostForm();
   }
 
@@ -63,6 +62,10 @@ class Plugin extends PluginBase
    * Set locale to have months translated in archive view
    */
   protected function setLocaleForDates() {
+    // check if setting is allowed
+    if (!Config::get('graker.blogarchive::setLocaleForCarbon', FALSE)) {
+      return ;
+    }
     $localeCode = App::getLocale();
     Carbon::setLocale($localeCode);
     setlocale(LC_TIME, $localeCode . '_' . strtoupper($localeCode) . '.UTF-8');
@@ -74,6 +77,9 @@ class Plugin extends PluginBase
    *  - add button for Typographus.Lite.UTF8
    */
   protected function extendBlogPostForm() {
+    if (!Config::get('graker.blogarchive::addTypofilterToMarkdown', FALSE)) {
+      return ;
+    }
     Event::listen('backend.form.extendFields', function (Form $widget) {
       // attach to post forms only
       if (!($widget->getController() instanceof \RainLab\Blog\Controllers\Posts)) {
