@@ -1,10 +1,13 @@
 <?php namespace Graker\BlogArchive;
 
 use Backend;
+use Backend\Widgets\Form;
 use System\Classes\PluginBase;
 use Carbon\Carbon;
 use Lang;
 use App;
+use Event;
+use Log;
 
 /**
  * BlogArchive Plugin Information File
@@ -50,9 +53,40 @@ class Plugin extends PluginBase
    * Setup locale to use for month names
    */
   public function boot() {
+    $this->setLocaleForDates();
+    //TODO introduce settings for both this matters
+    $this->extendBlogPostForm();
+  }
+
+
+  /**
+   * Set locale to have months translated in archive view
+   */
+  protected function setLocaleForDates() {
     $localeCode = App::getLocale();
     Carbon::setLocale($localeCode);
     setlocale(LC_TIME, $localeCode . '_' . strtoupper($localeCode) . '.UTF-8');
+  }
+
+
+  /**
+   * Extends form to edit Blog Post
+   *  - add button for Typographus.Lite.UTF8
+   */
+  protected function extendBlogPostForm() {
+    Event::listen('backend.form.extendFields', function (Form $widget) {
+      // attach to post forms only
+      if (!($widget->getController() instanceof \RainLab\Blog\Controllers\Posts)) {
+        return ;
+      }
+      if (!($widget->model instanceof \RainLab\Blog\Models\Post)) {
+        return ;
+      }
+
+      //add javascript extending Markdown editor
+      $widget->addJs('/plugins/graker/blogarchive/assets/js/typofilter.js');
+      $widget->addJs('/plugins/graker/blogarchive/assets/js/typofilter-markdown-extend.js');
+    });
   }
 
 
