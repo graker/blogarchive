@@ -27,7 +27,8 @@
         text = editor.session.getTextRange(editor.selection.getRange()).trim();
 
       if (!text.length) {
-        return ;
+        editor.selection.selectAll();
+        text = editor.session.getTextRange(editor.selection.getRange()).trim();
       }
 
       text = Typographus.process(text);
