@@ -27,6 +27,12 @@ Also note that due to the use of RAND() function for sorting, the component woul
 To use component with other databases, you'd need to rewrite orderBy() call. 
 And apparently there's no general DB-independent method in Laravel to do random sorting.
 
+### Sitemap and Pages integration
+
+Archive pages are integrated into [Sitemap](https://octobercms.com/plugin/rainlab-sitemap). 
+You can add "All Archive Years" item at Sitemap settings and have a link to each year archive in the sitemap.xml, starting from the first year you have published posts on. 
+And since [Static Pages](http://octobercms.com/plugin/rainlab-pages) plugin shares the integration events with Sitemap, you can also add archive years as static menu items.
+
 ### Typofilter integration
 
 To perform some typographical transforms and replacements, [Typofilter.js](https://github.com/graker/typofilter.js) is integrated in this plugin. 

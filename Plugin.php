@@ -8,6 +8,7 @@ use Lang;
 use App;
 use Event;
 use Config;
+use Graker\BlogArchive\Classes\SitemapProvider;
 
 /**
  * BlogArchive Plugin Information File
@@ -55,6 +56,7 @@ class Plugin extends PluginBase
   public function boot() {
     $this->setLocaleForDates();
     $this->extendBlogPostForm();
+    $this->registerSiteMapItems();
   }
 
 
@@ -124,5 +126,31 @@ class Plugin extends PluginBase
   {
     return [];
   }
-
+  
+  
+  /**
+   * Listen to pages.menuitem events to create new items
+   * to use in XML sitemap
+   */
+  protected function registerSiteMapItems() {
+    // Register menu item
+    Event::listen('pages.menuitem.listTypes', function () {
+      return SitemapProvider::listTypes();
+    });
+    
+    // Register menu item info
+    Event::listen('pages.menuitem.getTypeInfo', function ($type) {
+      if ($type == 'all-archive-years') {
+        return SitemapProvider::getMenuTypeInfo($type);
+      }
+    });
+    
+    // Resolve menu item
+    Event::listen('pages.menuitem.resolveItem', function($type, $item, $url, $theme) {
+      if ($type == 'all-archive-years') {
+        return SitemapProvider::resolveMenuItem($item, $url, $theme);
+      }
+    });
+  }
+  
 }
