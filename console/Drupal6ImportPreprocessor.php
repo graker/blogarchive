@@ -24,7 +24,13 @@ class Drupal6ImportPreprocessor extends Command {
    * @var string The console command description.
    */
   protected $description = 'Preprocess CSV file to import blog posts exported from Drupal 6 nodes.';
-
+  
+  
+  /**
+   * @var int position of title column
+   */
+  protected $title_index = 0;
+  
 
   /**
    * @var int position of content column
@@ -86,6 +92,9 @@ class Drupal6ImportPreprocessor extends Command {
     }
     $first_row = $csv->fetchOne();
     // set up column positions
+    if (!$this->findColumn($first_row, 'title', $this->title_index)) {
+      return;
+    }
     if (!$this->findColumn($first_row, 'content', $this->content_index)) {
       return;
     }
@@ -171,7 +180,41 @@ class Drupal6ImportPreprocessor extends Command {
     $str = substr($str, 0, $close_pos);
     $parts = explode('/', $str);
     $link = array_pop($parts);
+    // October has a restriction: slug must be at least 3 chars
+    $link = $this->checkLinkLength($link, $row);
     $row[$this->link_index] = $link;
+  }
+  
+  
+  /**
+   *
+   * Checks if $link meets October's requirement to be at least 3 chars
+   * If not, tries to propose a new link:
+   *  - from a title
+   *  - by prepending 'id-' to the link
+   *
+   * @param string $link
+   * @param array $row
+   * @return string
+   */
+  protected function checkLinkLength($link, $row) {
+    if (strlen($link) >= 3) {
+      return $link;
+    }
+    $title = $row[$this->title_index];
+    $this->output->writeln("Updating short link for title=" . $title);
+    
+    //try to use transliterated title
+    $string = transliterator_transliterate("Any-Latin; NFD; [:Nonspacing Mark:] Remove; NFC; [:Punctuation:] Remove; Lower();", $title);
+    $string = preg_replace('/[-\s]+/', '-', $string);
+    $string = trim($string, '-');
+    if (strlen($string) >= 3) {
+      $this->output->writeln("Link for title=$title is replaced with transliterated title");
+      return $string;
+    } else {
+      $this->output->writeln("Link for title=$title is prepended with id-");
+      return 'id-' . $link;
+    }
   }
 
 
