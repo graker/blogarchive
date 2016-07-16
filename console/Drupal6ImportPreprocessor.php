@@ -66,6 +66,12 @@ class Drupal6ImportPreprocessor extends Command {
    * @var string path where to place new file links
    */
   protected $file_links = '';
+  
+  
+  /**
+   * @var string domain to replace with internal links (if there are external links)
+   */
+  protected $domain = '';
 
 
   /**
@@ -116,6 +122,7 @@ class Drupal6ImportPreprocessor extends Command {
 
     //process rows
     $this->file_links = $this->option('files');
+    $this->domain = $this->option('replace-external');
     $rows = $csv->fetchAll();
     array_shift($rows); // remove header
     $count = count($rows);
@@ -312,25 +319,29 @@ class Drupal6ImportPreprocessor extends Command {
    */
   protected function processHTML(&$row) {
     if ($row[$this->content_index]) {
-      $this->processHTMLString($row[$this->content_index]);
+      $this->processHTMLString($row[$this->content_index], $row[$this->title_index]);
     }
     if ($row[$this->teaser_index]) {
-      $this->processHTMLString($row[$this->teaser_index]);
+      $this->processHTMLString($row[$this->teaser_index], $row[$this->title_index]);
     }
   }
-
-
+  
+  
   /**
    *
    * Creates dom object for $html given and launches each enabled process for this dom
    * Then processed dom is dumped back to $html given
    *
    * @param string $html
+   * @param string $title - title of the row to report back of some changes
    */
-  protected function processHTMLString(&$html) {
+  protected function processHTMLString(&$html, $title) {
     $dom = $this->createDOM($html);
 
     //processing DOM
+    if ($this->domain) {
+      $this->replaceExternalLinks($dom);
+    }
     if ($this->file_links) {
       $this->processFileLinks($dom);
     }
@@ -338,7 +349,9 @@ class Drupal6ImportPreprocessor extends Command {
       $this->lightboxToMagnific($dom);
     }
     if ($this->option('code-to-prettify')) {
-      $this->replaceCodeWithPrettify($dom);
+      if ($this->replaceCodeWithPrettify($dom)) {
+        $this->info("Fixed code block for post $title");
+      }
     }
 
     $html = $this->dumpDOM($dom);
@@ -377,6 +390,36 @@ class Drupal6ImportPreprocessor extends Command {
     $html = str_replace('<div id="post-import-wrapper">', '', $html);
     $html = mb_substr($html, 0, mb_strlen($html)-6);
     return $html;
+  }
+  
+  
+  /**
+   *
+   * Replaces http://domain/ with / to fix external links which should really be internal
+   *
+   * @param \DOMDocument $dom
+   */
+  protected function replaceExternalLinks($dom) {
+    $domain = 'http://' . $this->domain . '/';
+    // rewrite links
+    foreach ($dom->getElementsByTagName('a') as $tag) {
+      $href = $tag->getAttribute('href');
+      if (substr($href, 0, strlen($domain)) === $domain) {
+        $this->output->writeln("Replacing " . $href . " external link");
+        $href = str_replace($domain, '/', $href);
+        $tag->setAttribute('href', $href);
+      }
+    }
+    
+    // rewrite images
+    foreach ($dom->getElementsByTagName('img') as $tag) {
+      $src = $tag->getAttribute('src');
+      if (substr($src, 0, strlen($domain)) === $domain) {
+        $this->output->writeln("Replacing " . $src . " external image");
+        $src = str_replace($domain, '/', $src);
+        $tag->setAttribute('src', $src);
+      }
+    }
   }
 
 
@@ -425,22 +468,27 @@ class Drupal6ImportPreprocessor extends Command {
       }
     }
   }
-
-
+  
+  
   /**
    *
    * Replaces code tags with prettify markup,
    * also moves code tags outside of the paragraphs (or prettify won't work)
    *
    * @param \DOMDocument $dom
+   * @return bool returns true, if at least one piece of code was processed
    */
   protected function replaceCodeWithPrettify($dom) {
+    $return = FALSE;
     foreach ($this->code_tags as $code_tag => $language_class) {
-      $this->processCodeTag($dom, $code_tag, $language_class);
+      if ($this->processCodeTag($dom, $code_tag, $language_class)) {
+        $return = TRUE;
+      }
     }
+    return $return;
   }
-
-
+  
+  
   /**
    *
    * Process one code tag to be prettified
@@ -448,6 +496,7 @@ class Drupal6ImportPreprocessor extends Command {
    * @param \DOMDocument $dom - dom being processed
    * @param string $code_tag - code tag name
    * @param string $language_class - class to tip Prettify on the language used
+   * @return bool returns true if there was a code block processed
    */
   protected function processCodeTag($dom, $code_tag, $language_class) {
     $code_tags = array();
@@ -457,7 +506,7 @@ class Drupal6ImportPreprocessor extends Command {
     }
 
     if (empty($code_tags)) {
-      return;
+      return FALSE;
     }
     foreach ($code_tags as $tag) {
       $parent = $tag->parentNode;
@@ -492,6 +541,7 @@ class Drupal6ImportPreprocessor extends Command {
         $tag->removeChild($br);
       }
     }
+    return TRUE;
   }
 
 
@@ -524,6 +574,13 @@ class Drupal6ImportPreprocessor extends Command {
       ],
       [ 'lightbox-to-magnific', NULL, InputOption::VALUE_NONE, 'If set, rel="lightbox" will be replaced with class="magnific"'],
       [ 'code-to-prettify', NULL, InputOption::VALUE_NONE, 'If set, code tags will be replaced with prettify markup'],
+      [
+        'replace-external',
+        NULL,
+        InputOption::VALUE_OPTIONAL,
+        'Replace external links to domain given with internal (/* instead of http://domain/*). Type in domain name without protocol.',
+        NULL,
+      ],
     ];
   }
 
