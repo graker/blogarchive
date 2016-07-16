@@ -27,6 +27,12 @@ class Drupal6ImportPreprocessor extends Command {
   
   
   /**
+   * @var int position of id column
+   */
+  protected $id_index = 0;
+  
+  
+  /**
    * @var int position of title column
    */
   protected $title_index = 0;
@@ -117,6 +123,12 @@ class Drupal6ImportPreprocessor extends Command {
     foreach ($rows as &$row) {
       $this->processRow($row);
     }
+    
+    // post-process rows
+    $this->info('Starting rows post-process');
+    foreach ($rows as &$row) {
+      $this->postProcess($row, $rows);
+    }
 
     //save updated rows
     $output_file = $this->argument('output_file');
@@ -143,6 +155,51 @@ class Drupal6ImportPreprocessor extends Command {
     $this->getLink($row);
     $this->processCategories($row);
     $this->processHTML($row);
+  }
+  
+  
+  /**
+   *
+   * Post-processing for row
+   * This happens when all rows are processed and information is gathered
+   *
+   * @param $row
+   * @param $rows array of processed rows to reference
+   */
+  protected function postProcess(&$row, $rows) {
+    // check row slug for uniqueness
+    $slug = $original_link = $row[$this->link_index];
+    $i = 1;
+    while (!$this->isUniqueSlug($slug, $rows, $row[$this->id_index])) {
+      $slug = $original_link . "-$i";
+      $i ++;
+    }
+    if ($slug != $original_link) {
+      $row[$this->link_index] = $slug;
+      $this->output->writeln("Fixed non-unique slug for row " . $row[$this->title_index]);
+    }
+  }
+  
+  
+  /**
+   *
+   * Check whether $slug given is unique through all the $rows
+   *
+   * @param $slug
+   * @param $rows
+   * @param int $id - id of row being checked (to avoid comparing to itself)
+   * @return bool
+   */
+  protected function isUniqueSlug($slug, $rows, $id) {
+    foreach ($rows as $row) {
+      if ($row[$this->id_index] == $id) {
+        continue;
+      }
+      if ($row[$this->link_index] == $slug) {
+        return false;
+      }
+    }
+    return true;
   }
 
 
@@ -180,7 +237,7 @@ class Drupal6ImportPreprocessor extends Command {
     $str = substr($str, 0, $close_pos);
     $parts = explode('/', $str);
     $link = array_pop($parts);
-    // October has a restriction: slug must be at least 3 chars
+    // October has a restriction: slug must be at least 3 chars and no longer than 64 chars
     $link = $this->checkLinkLength($link, $row);
     $row[$this->link_index] = $link;
   }
@@ -188,7 +245,7 @@ class Drupal6ImportPreprocessor extends Command {
   
   /**
    *
-   * Checks if $link meets October's requirement to be at least 3 chars
+   * Checks if $link meets October's requirement to be at least 3 chars and no longer than 64 chars
    * If not, tries to propose a new link:
    *  - from a title
    *  - by prepending 'id-' to the link
@@ -198,22 +255,30 @@ class Drupal6ImportPreprocessor extends Command {
    * @return string
    */
   protected function checkLinkLength($link, $row) {
-    if (strlen($link) >= 3) {
+    $length = strlen($link);
+    if ((3 <= $length) && ($length <= 64)) {
       return $link;
     }
     $title = $row[$this->title_index];
-    $this->output->writeln("Updating short link for title=" . $title);
+    $this->output->writeln("Updating link length for title=" . $title);
     
     //try to use transliterated title
-    $string = transliterator_transliterate("Any-Latin; NFD; [:Nonspacing Mark:] Remove; NFC; [:Punctuation:] Remove; Lower();", $title);
-    $string = preg_replace('/[-\s]+/', '-', $string);
-    $string = trim($string, '-');
-    if (strlen($string) >= 3) {
-      $this->output->writeln("Link for title=$title is replaced with transliterated title");
-      return $string;
+    if ($length < 3) {
+      // update short link
+      $string = transliterator_transliterate("Any-Latin; NFD; [:Nonspacing Mark:] Remove; NFC; [:Punctuation:] Remove; Lower();", $title);
+      $string = preg_replace('/[-\s]+/', '-', $string);
+      $string = trim($string, '-');
+      if (strlen($string) >= 3) {
+        $this->output->writeln("Link for title=$title is replaced with transliterated title");
+        return $string;
+      } else {
+        $this->output->writeln("Link for title=$title is prepended with id-");
+        return 'id-' . $link;
+      }
     } else {
-      $this->output->writeln("Link for title=$title is prepended with id-");
-      return 'id-' . $link;
+      // update long link - cut to 61 symbol to have room for unique processing later)
+      $string = substr($link, 0, 61);
+      return $string;
     }
   }
 

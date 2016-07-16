@@ -67,6 +67,7 @@ php artisan blogarchive:d6_preprocess_import -h
 For the command to work properly you CSV file must meet some requirements:
 
 * first row must be of column titles
+* first column must be unique id (e.g. node id)
 * content column title must be Content
 * teaser column title must be Teaser
 * link column title must be Link
