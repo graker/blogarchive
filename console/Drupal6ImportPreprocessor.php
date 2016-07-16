@@ -286,11 +286,21 @@ class Drupal6ImportPreprocessor extends Command {
   /**
    *
    * Replaces standard D6 ", " delimiter in categories with "|"
+   * Processes short (less than 3 symbols) category names to meet slug requirements
    *
    * @param array $row the row to be processed and changed
    */
   protected function processCategories(&$row) {
     $row[$this->categories_index] = str_replace(', ', '|', $row[$this->categories_index]);
+    $categories = explode('|', $row[$this->categories_index]);
+    if (empty($categories)) return ;
+    foreach ($categories as &$category) {
+      if (mb_strlen($category) < 3) {
+        // add suffix to short category names
+        $category .= '-tag';
+      }
+    }
+    $row[$this->categories_index] = implode('|', $categories);
   }
 
 
