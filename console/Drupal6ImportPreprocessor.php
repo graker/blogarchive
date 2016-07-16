@@ -348,6 +348,9 @@ class Drupal6ImportPreprocessor extends Command {
     if ($this->option('lightbox-to-magnific')) {
       $this->lightboxToMagnific($dom);
     }
+    if ($this->option('magnify-orphan-previews')) {
+      $this->magnifyOrphanPreviews($dom);
+    }
     if ($this->option('code-to-prettify')) {
       if ($this->replaceCodeWithPrettify($dom)) {
         $this->info("Fixed code block for post $title");
@@ -472,6 +475,35 @@ class Drupal6ImportPreprocessor extends Command {
   
   /**
    *
+   * Wraps orphaned previews with magnifying links
+   *
+   * @param \DOMDocument $dom
+   */
+  protected function magnifyOrphanPreviews($dom) {
+    foreach ($dom->getElementsByTagName('img') as $tag) {
+      $parent = $tag->parentNode;
+      if ($parent->nodeName == 'a') {
+        // already wrapped
+        continue;
+      }
+      $src = $tag->getAttribute('src');
+      if (!strstr($src, '.preview.')) {
+        // not a preview
+        continue;
+      }
+      // found an orphan, wrap it
+      $element = $dom->createElement('a');
+      $element->setAttribute('class', 'magnific');
+      $element->setAttribute('href', str_replace('.preview', '', $src));
+      $parent->replaceChild($element, $tag);
+      $element->appendChild($tag);
+      $this->output->writeln("Wrapping orphaned preview of $src");
+    }
+  }
+  
+  
+  /**
+   *
    * Replaces code tags with prettify markup,
    * also moves code tags outside of the paragraphs (or prettify won't work)
    *
@@ -579,6 +611,13 @@ class Drupal6ImportPreprocessor extends Command {
         NULL,
         InputOption::VALUE_OPTIONAL,
         'Replace external links to domain given with internal (/* instead of http://domain/*). Type in domain name without protocol.',
+        NULL,
+      ],
+      [
+        'magnify-orphan-previews',
+        NULL,
+        InputOption::VALUE_NONE,
+        'If there is an image not wrapped in anchor and it has .preview. in src, wrap it with magnifying anchor',
         NULL,
       ],
     ];
