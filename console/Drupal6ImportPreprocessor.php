@@ -375,6 +375,11 @@ class Drupal6ImportPreprocessor extends Command {
         $this->info("Fixed code block for post $title");
       }
     }
+    if ($this->option('report-gallery-links')) {
+      if ($this->hasGalleryLinks($dom)) {
+        $this->warn("Found gallery links in content $title");
+      }
+    }
 
     $html = $this->dumpDOM($dom);
   }
@@ -442,6 +447,24 @@ class Drupal6ImportPreprocessor extends Command {
         $tag->setAttribute('src', $src);
       }
     }
+  }
+  
+  
+  /**
+   *
+   * Returns true if there are links to galleries in $dom
+   *
+   * @param $dom
+   * @return bool
+   */
+  protected function hasGalleryLinks($dom) {
+    foreach ($dom->getElementsByTagName('a') as $tag) {
+      $href = $tag->getAttribute('href');
+      if (strstr($href, 'image/image_galleries')) {
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 
 
@@ -644,6 +667,13 @@ class Drupal6ImportPreprocessor extends Command {
         NULL,
         InputOption::VALUE_NONE,
         'If set, will report possible redirects for pages with links different from news/year/month/day/slug.',
+        NULL,
+      ],
+      [
+        'report-gallery-links',
+        NULL,
+        InputOption::VALUE_NONE,
+        'If set, will report of links to image galleries in content',
         NULL,
       ],
     ];
