@@ -7,6 +7,7 @@
 namespace Graker\BlogArchive\Console;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Input;
 use League\Csv\Reader;
 use League\Csv\Writer;
 use SplTempFileObject;
@@ -242,11 +243,29 @@ class Drupal6ImportPreprocessor extends Command {
     $str = substr($row[$this->link_index], $start_pos+1);
     $close_pos = strpos($str, '"');
     $str = substr($str, 0, $close_pos);
+    if ($this->option('report-redirects')) {
+      $this->checkRedirectReport($str, $row[$this->title_index]);
+    }
     $parts = explode('/', $str);
     $link = array_pop($parts);
     // October has a restriction: slug must be at least 3 chars and no longer than 64 chars
     $link = $this->checkLinkLength($link, $row);
     $row[$this->link_index] = $link;
+  }
+  
+  
+  /**
+   *
+   * Checks if the link is not in /news/<year>/<month>/<day>/<slug> pattern
+   *
+   * @param string $link
+   * @param string $title title of content
+   */
+  protected function checkRedirectReport($link, $title) {
+    //for now we just check for /news and report if it isn't the case
+    if (strpos($link, 'news/') != 1) {
+      $this->warn("Possible redirect found at $link for content $title");
+    }
   }
   
   
@@ -617,7 +636,14 @@ class Drupal6ImportPreprocessor extends Command {
         'magnify-orphan-previews',
         NULL,
         InputOption::VALUE_NONE,
-        'If there is an image not wrapped in anchor and it has .preview. in src, wrap it with magnifying anchor',
+        'If there is an image not wrapped in anchor and it has .preview. in src, wrap it with magnifying anchor.',
+        NULL,
+      ],
+      [
+        'report-redirects',
+        NULL,
+        InputOption::VALUE_NONE,
+        'If set, will report possible redirects for pages with links different from news/year/month/day/slug.',
         NULL,
       ],
     ];
