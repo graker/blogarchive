@@ -380,6 +380,11 @@ class Drupal6ImportPreprocessor extends Command {
         $this->warn("Found gallery links in content $title");
       }
     }
+    if ($this->option('object-p')) {
+      if ($this->replaceObjectP($dom)) {
+        $this->warn("Fixed object inside paragraph in content $title");
+      }
+    }
 
     $html = $this->dumpDOM($dom);
   }
@@ -617,6 +622,36 @@ class Drupal6ImportPreprocessor extends Command {
     }
     return TRUE;
   }
+  
+  
+  /**
+   *
+   * Looks for <object> tags inside <p>, if found, replaces <p> with <div>
+   * and align=center with class=text-center
+   *
+   * @param \DOMDocument $dom
+   * @return bool
+   */
+  protected function replaceObjectP($dom) {
+    $return = FALSE;
+        
+    foreach ($dom->getElementsByTagName('object') as $object) {
+      $parent = $object->parentNode;
+      if ($parent->nodeName == 'p') {
+        // create replacement div
+        $div = $dom->createElement('div');
+        $div->appendChild($object);
+        if ($parent->getAttribute('align') == 'center') {
+          // preserve center align
+          $div->setAttribute('class', 'text-center');
+        }
+        $parent->parentNode->replaceChild($div, $parent);
+        $return = TRUE;
+      }
+    }
+    
+    return $return;
+  }
 
 
   /**
@@ -675,6 +710,12 @@ class Drupal6ImportPreprocessor extends Command {
         InputOption::VALUE_NONE,
         'If set, will report of links to image galleries in content',
         NULL,
+      ],
+      [
+        'object-p',
+        NULL,
+        InputOption::VALUE_NONE,
+        'If object tag is inside paragraph, replace paragraph with div and align=center with class=text-center'
       ],
     ];
   }
