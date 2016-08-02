@@ -6,6 +6,7 @@
 
 namespace Graker\BlogArchive\Console;
 
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Input;
 use League\Csv\Reader;
@@ -61,6 +62,12 @@ class Drupal6ImportPreprocessor extends Command {
    * @var int position of categories column
    */
   protected $categories_index = 0;
+  
+  
+  /**
+   * @var int position of created column
+   */
+  protected $created_index = 0;
 
 
   /**
@@ -73,6 +80,18 @@ class Drupal6ImportPreprocessor extends Command {
    * @var string domain to replace with internal links (if there are external links)
    */
   protected $domain = '';
+  
+  
+  /**
+   * @var string text for disqus comments (if set)
+   */
+  protected $discus_text = '';
+  
+  
+  /**
+   * @var string file name with disqus import-to-be
+   */
+  protected $discus_file = '';
 
 
   /**
@@ -97,6 +116,10 @@ class Drupal6ImportPreprocessor extends Command {
   {
     $filename = $this->argument('input_file');
     $this->output->writeln("Processing file $filename");
+    
+    if ($this->option('disqus-comments')) {
+      $this->readDisqusExport();
+    }
 
     $csv = Reader::createFromPath($filename);
     if (!$csv) {
@@ -105,6 +128,9 @@ class Drupal6ImportPreprocessor extends Command {
     }
     $first_row = $csv->fetchOne();
     // set up column positions
+    if (!$this->findColumn($first_row, 'nid', $this->id_index)) {
+      return;
+    }
     if (!$this->findColumn($first_row, 'title', $this->title_index)) {
       return;
     }
@@ -118,6 +144,9 @@ class Drupal6ImportPreprocessor extends Command {
       return;
     }
     if (!$this->findColumn($first_row, 'categories', $this->categories_index)) {
+      return;
+    }
+    if (!$this->findColumn($first_row, 'created', $this->created_index)) {
       return;
     }
 
@@ -149,6 +178,11 @@ class Drupal6ImportPreprocessor extends Command {
     } else {
       $this->output->writeln("Processed CSV is written to $output_file");
     }
+    
+    //save disqus changes
+    if ($this->discus_file) {
+      $this->saveDisqusExport();
+    }
   }
 
 
@@ -163,6 +197,9 @@ class Drupal6ImportPreprocessor extends Command {
     $this->getLink($row);
     $this->processCategories($row);
     $this->processHTML($row);
+    if ($this->discus_file) {
+      $this->processDisqusRow($row);
+    }
   }
   
   
@@ -327,6 +364,28 @@ class Drupal6ImportPreprocessor extends Command {
       }
     }
     $row[$this->categories_index] = implode('|', $categories);
+  }
+  
+  
+  /**
+   *
+   * Evaluates url to be for this row (/news/y/m/d/slug)
+   * and replaces /node/id with it in disqus text
+   *
+   * @param array $row the row to be processed
+   */
+  protected function processDisqusRow($row) {
+    $created = new Carbon($row[$this->created_index]);
+    $url = '/news';
+    $url .= '/' . date('Y', $created->getTimestamp());
+    $url .= '/' . date('m', $created->getTimestamp());
+    $url .= '/' . date('d', $created->getTimestamp());
+    $url .= '/' . $row[$this->link_index];
+    $url = '<link>' . $url . '</link>';
+    
+    $old_url = '<link>http://graker.ru/node/' . $row[$this->id_index] . '</link>';
+    
+    $this->discus_text = str_replace($old_url, $url, $this->discus_text);
   }
 
 
@@ -691,6 +750,13 @@ class Drupal6ImportPreprocessor extends Command {
         NULL,
       ],
       [
+        'disqus-comments',
+        NULL,
+        InputOption::VALUE_OPTIONAL,
+        'Goes over XML file containing comments export for discus and replaces /node/nid link with the new link (/news/year/month/day/slug)',
+        NULL,
+      ],
+      [
         'magnify-orphan-previews',
         NULL,
         InputOption::VALUE_NONE,
@@ -749,5 +815,22 @@ class Drupal6ImportPreprocessor extends Command {
     }
     return $found;
   }
-
+  
+  
+  /**
+   * Reads file with disqus import to change it through the csv processing and save back later
+   */
+  protected function readDisqusExport() {
+    $this->discus_file = $this->option('disqus-comments');
+    $this->discus_text = file_get_contents($this->discus_file);
+  }
+  
+  
+  /**
+   * Saves changed discus import back
+   */
+  protected function saveDisqusExport() {
+    file_put_contents($this->discus_file, $this->discus_text);
+  }
+  
 }
