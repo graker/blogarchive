@@ -104,6 +104,7 @@ class Plugin extends PluginBase
    */
   public function register() {
     $this->registerConsoleCommand('blogarchive.d6_preprocess_import', 'Graker\BlogArchive\Console\Drupal6ImportPreprocessor');
+    $this->registerConsoleCommand('blogarchive.d6_parse_galleries', 'Graker\BlogArchive\Console\D6ParseGalleries');
   }
 
 
