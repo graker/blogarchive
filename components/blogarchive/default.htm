@@ -1,3 +1,8 @@
+{% set previous_url = __SELF__.previous_url %}
+{% set next_url = __SELF__.next_url %}
+{% set previous_text = __SELF__.previous_text %}
+{% set next_text = __SELF__.next_text %}
+
 <div class="blog-archive">
     {% for month, posts in blogArchive.archivePosts %}
         <h3>{{ month }}</h3>
@@ -24,4 +29,16 @@
             {% endfor %}
         </table>
     {% endfor %}
+    <ul class="pagination">
+        {% if previous_url %}
+            <li><a href="{{ previous_url }}">&larr; {{ previous_text }}</a></li>
+        {% else %}
+            <li><span class="disabled">{{ previous_text }}</span></li>
+        {% endif %}
+        {% if next_url %}
+            <li><a href="{{ next_url }}">{{ next_text }} &rarr;</a></li>
+        {% else %}
+            <li><span class="disabled">{{ next_text }}</span></li>
+        {% endif %}
+    </ul>
 </div>

@@ -23,7 +23,15 @@ class ArchivePager
   public $current_month = 0;
   public $current_day = 0;
 
-  public $first_year = 0;
+  /**
+   * @var Carbon object set to date of the first post
+   */
+  public $first_date = null;
+
+  /**
+   * @var Carbon object set to current date
+   */
+  public $current_date = null;
 
   /*
    * Text and url params to use in pagination
@@ -46,7 +54,7 @@ class ArchivePager
     $this->current_day = $day;
     $this->current_month = $month;
     $this->current_year = $year;
-    $this->first_year = self::getStartYear();
+    $this->setCurrentDate();
     $this->setupPager();
   }
 
@@ -69,7 +77,7 @@ class ArchivePager
    */
   protected function setupYearPager()
   {
-    if ($this->first_year <= ((intval($this->current_year) - 1))) {
+    if ($this->first_date->year <= ((intval($this->current_year) - 1))) {
       $prev_year = intval($this->current_year) - 1;
       $this->previous_text = $prev_year;
       $this->previous_url = $this->makePagerUrl(array('year' => $prev_year));
@@ -93,10 +101,8 @@ class ArchivePager
    */
   protected function setupMonthPager()
   {
-    $first_date = self::getFirstDate();
-    $current_date = new Carbon();
-    $current_date->setDate($this->current_year, $this->current_month, 1);
-    $current_date->setTime(0, 0);
+    $first_date = $this->first_date;
+    $current_date = $this->current_date;
     // previous
     if ($first_date->getTimestamp() < $current_date->getTimestamp()) {
       $previous_date = $current_date->copy();
@@ -125,9 +131,43 @@ class ArchivePager
     }
   }
 
+  /**
+   * Sets up pager to switch prev/next day
+   */
   protected function setupDayPager()
   {
-    // TODO implement
+    $first_date = $this->first_date;
+    $current_date = $this->current_date;
+    // previous
+    if ($first_date->getTimestamp() < $current_date->getTimestamp()) {
+      $previous_date = $current_date->copy();
+      $previous_date->subDay(1);
+      $this->previous_text = $previous_date->formatLocalized('%d') . ' ' . $previous_date->formatLocalized('%B') . ', ' . $previous_date->year;
+      $this->previous_url = $this->makePagerUrl(array(
+        'year' => $previous_date->year,
+        'month' => $previous_date->month,
+        'day' => $previous_date->day,
+      ));
+    } else {
+      $this->previous_text = $current_date->formatLocalized('%d') . ' ' . $current_date->formatLocalized('%B') . ', ' . $current_date->year;
+      $this->previous_url = '';
+    }
+    // next
+    $today = new Carbon();
+    $today->setTime(0, 0);
+    if ($this->current_date->getTimestamp() < $today->getTimestamp()) {
+      $next_date = $current_date->copy();
+      $next_date->addDay(1);
+      $this->next_text = $next_date->formatLocalized('%d') . ' ' . $next_date->formatLocalized('%B') . ', ' . $next_date->year;
+      $this->next_url = $this->makePagerUrl(array(
+        'year' => $next_date->year,
+        'month' => $next_date->month,
+        'day' => $next_date->day,
+      ));
+    } else {
+      $this->next_text = $current_date->formatLocalized('%d') . ' ' . $current_date->formatLocalized('%B') . ', ' . $current_date->year;
+      $this->next_url = '';
+    }
   }
 
   /**
@@ -140,5 +180,19 @@ class ArchivePager
   protected function makePagerUrl($params) {
     $page = $this->controller->getPage();
     return $this->controller->pageUrl($page->getBaseFileName(), $params);
+  }
+
+  /**
+   *
+   * Sets first date and current date obects
+   *
+   */
+  protected function setCurrentDate()
+  {
+    $this->first_date = self::getFirstDate();
+    $this->current_date = new Carbon();
+    // set current day to 1 if unset (so it won't be 0 because 0 is the last day of previous month)
+    $this->current_date->setDate($this->current_year, $this->current_month, ($this->current_day) ? $this->current_day : 1);
+    $this->current_date->setTime(0, 0);
   }
 }

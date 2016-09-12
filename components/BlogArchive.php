@@ -3,7 +3,7 @@
 namespace Graker\BlogArchive\Components;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
+use Graker\BlogArchive\Classes\ArchivePager;
 use Rainlab\Blog\Models\Post;
 use Cms\Classes\Page;
 use App;
@@ -14,17 +14,25 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
   /**
    * @var string year to display archive for
    */
-  protected $year = '';
+  public $year = '';
 
   /**
    * @var string month to display archive for
    */
-  protected $month = '';
+  public $month = '';
 
   /**
    * @var string day to display archive for
    */
-  protected $day = '';
+  public $day = '';
+
+  /*
+   * Vars for mini-pager
+   */
+  public $previous_text = '';
+  public $previous_url = '';
+  public $next_text = '';
+  public $next_url = '';
 
   /**
    * Returns information about this component, including name and description.
@@ -82,6 +90,8 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     if (!checkdate($month, $day, $year)) {
       return Redirect::to('404');
     }
+
+    $this->setupPager();
   }
 
 
@@ -191,6 +201,18 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     }
 
     return $prepared;
+  }
+
+
+  /**
+   * Sets previous and next years for pager
+   */
+  protected function setupPager() {
+    $pager = new ArchivePager($this->controller, $this->year, $this->month, $this->day);
+    $this->previous_text = $pager->previous_text;
+    $this->previous_url = $pager->previous_url;
+    $this->next_text = $pager->next_text;
+    $this->next_url = $pager->next_url;
   }
   
 
