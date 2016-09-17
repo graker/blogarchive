@@ -4,12 +4,15 @@ namespace Graker\BlogArchive\Components;
 
 use Carbon\Carbon;
 use Graker\BlogArchive\Classes\ArchivePager;
+use Graker\BlogArchive\Classes\ArchiveTrait;
 use Rainlab\Blog\Models\Post;
 use Cms\Classes\Page;
 use App;
 use Redirect;
 
 class BlogArchive extends \Cms\Classes\ComponentBase {
+
+  use ArchiveTrait;
 
   /**
    * @var string year to display archive for
@@ -88,6 +91,10 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     }
 
     if (!checkdate($month, $day, $year)) {
+      return Redirect::to('404');
+    }
+
+    if (!$this->isInRange()) {
       return Redirect::to('404');
     }
 
@@ -214,7 +221,28 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     $this->next_text = $pager->next_text;
     $this->next_url = $pager->next_url;
   }
-  
+
+
+  /**
+   *
+   * Checks if current date in in range of ($first_date:time())
+   *
+   * @return bool
+   */
+  protected function isInRange() {
+    $first_date = self::getFirstDate();
+    if (!$this->month) $first_date->month(1);
+    if (!$this->day) $first_date->day(1);
+    $now = new Carbon();
+    $year = $this->year;
+    $month = (!$this->month) ? '1' : $this->month;
+    $day = (!$this->day) ? '1' : $this->day;
+    $current = new Carbon();
+    $current->setDate($year, $month, $day);
+    $current->setTime(0, 0);
+    return (($first_date->getTimestamp() <= $current->getTimestamp()) && ($current->getTimestamp() <= $now->getTimestamp()));
+  }
+
 
   /**
    *
