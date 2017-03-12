@@ -11,7 +11,6 @@ use Config;
 use Graker\BlogArchive\Classes\SitemapProvider;
 use Rainlab\Blog\Models\Post;
 use Markdown;
-use Log;
 
 /**
  * BlogArchive Plugin Information File
