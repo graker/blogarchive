@@ -9,6 +9,9 @@ use App;
 use Event;
 use Config;
 use Graker\BlogArchive\Classes\SitemapProvider;
+use Rainlab\Blog\Models\Post;
+use Markdown;
+use Log;
 
 /**
  * BlogArchive Plugin Information File
@@ -57,6 +60,7 @@ class Plugin extends PluginBase
     $this->setLocaleForDates();
     $this->extendBlogPostForm();
     $this->registerSiteMapItems();
+    $this->registerPostPresave();
   }
 
 
@@ -153,5 +157,18 @@ class Plugin extends PluginBase
       }
     });
   }
-  
+
+
+  /**
+   * Registers blog Post presave event callback
+   */
+  protected function registerPostPresave() {
+    Post::extend(function (Post $model) {
+      // beforeSave processor to process excerpt with Mardown filter and save it as processed
+      $model->bindEvent('model.beforeSave', function() use ($model) {
+        $model->excerpt = Markdown::parse($model->excerpt);
+      });
+    });
+  }
+
 }
