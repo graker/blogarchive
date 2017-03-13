@@ -18,6 +18,12 @@ in a table manner, sorted by published date and grouped by months.
 Note that to output translated month names via `Carbon` in the archive table, the component will use `setlocale()` to set the application locale.
 You can disable this feature in `config/config.php` file of the plugin (set `setLocaleForCarbon` value to `FALSE` in the overridden config file).
 
+### Blog excerpts and Markdown
+
+By default, only Post text is processed by Blog plugin with Markdown filter. As for Post excerpt, it is saved as is without markdown support. So you have to either type excerpt without markdown or output it using pipe filter: `{{ excerpt | md }}`. To improve this behavior, post.beforeSave listener is added in BlogArchive plugin. In this listener, post excerpt will be processed with Markdown filter whenever post is being saved.
+
+In addition, to process old post excerpts, artisan command `blogarchive:updateexcerpts` had been added. It would find all existing posts with non-empty excerpt fields and re-save them.
+
 ### Random posts component
 
 Also there is Random Posts component which you can use to display some random post titles (or more than titles if you override default markup). 
