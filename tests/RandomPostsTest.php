@@ -126,7 +126,8 @@ class RandomPostsTest extends PluginTestCase {
     $post->content = 'Post content ' . $index;
     if ($published) {
       $post->published = TRUE;
-      $post->published_at = Carbon::now();
+      // make it 10 seconds ago because isPublished() scope use '<' for comparison
+      $post->published_at = Carbon::createFromTimestamp(time() - 10);
     }
     $post->save();
     return $post;
