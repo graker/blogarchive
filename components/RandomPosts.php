@@ -95,7 +95,7 @@ class RandomPosts extends ComponentBase
     } else {
       $posts = Post::orderBy('id');
     }
-    $posts = $posts->take($count)->get();
+    $posts = $posts->isPublished()->take($count)->get();
 
     foreach ($posts as $post) {
       $post->url = $post->setUrl($this->property('postPage'), $this->controller);
