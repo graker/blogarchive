@@ -86,9 +86,16 @@ class RandomPosts extends ComponentBase
    */
   protected function getPosts() {
     $count = $this->property('postsCount');
-    $posts = Post::orderBy(DB::raw('RAND()'))
-      ->take($count)
-      ->get();
+
+    // use rand from different db drivers
+    if (DB::connection()->getDriverName() == 'mysql') {
+      $posts = Post::orderBy(DB::raw('RAND()'));
+    } else if (DB::connection()->getDriverName() == 'sqlite') {
+      $posts = Post::orderBy(DB::raw('RANDOM()'));
+    } else {
+      $posts = Post::orderBy('id');
+    }
+    $posts = $posts->take($count)->get();
 
     foreach ($posts as $post) {
       $post->url = $post->setUrl($this->property('postPage'), $this->controller);
