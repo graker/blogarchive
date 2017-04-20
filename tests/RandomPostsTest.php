@@ -87,7 +87,7 @@ class RandomPostsTest extends PluginTestCase {
     $ids = $generated_posts->pluck('id');
     self::assertTrue(in_array($posts[0]->id, $ids->all()), 'Published post is in generated array');
     self::assertFalse(in_array($posts[1]->id, $ids->all()), 'Unpublished post is not in generated array');
-    self::assertFalse(in_array($posts[2]->id, $ids->all()), 'Unpublished post is not in generated array');
+    self::assertFalse(in_array($posts[3]->id, $ids->all()), 'Unpublished post is not in generated array');
   }
 
 
