@@ -7,7 +7,7 @@ in a table manner, sorted by published date and grouped by months.
 ## How to use
 
 * Enable the plugin
-* Create a page with year (required), month (optional) and day (optional) parameters
+* Create a page with year (required), month (optional) and day (optional) parameters, for example, set page path like this: `/news/:year/:month?/:day?`
 * Add blogArchive component to this page
 * In component settings, set up names of year, month and day parameters
 * Select category and post pages for links to these pages from archive to work
