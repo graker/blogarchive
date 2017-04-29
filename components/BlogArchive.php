@@ -5,6 +5,7 @@ namespace Graker\BlogArchive\Components;
 use Carbon\Carbon;
 use Graker\BlogArchive\Classes\ArchivePager;
 use Graker\BlogArchive\Classes\ArchiveTrait;
+use RainLab\Blog\Models\Category;
 use Rainlab\Blog\Models\Post;
 use Cms\Classes\Page;
 use App;
@@ -28,6 +29,11 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    * @var string day to display archive for
    */
   public $day = '';
+
+  /**
+   * @var Category if set, category to limit posts output
+   */
+  public $category = NULL;
 
   /*
    * Vars for mini-pager
@@ -57,11 +63,18 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    */
   public function archivePosts() {
     list($start, $end) = $this->getCurrentRange();
-    $posts = Post::where('published_at', '>=', $start)
+    $query = Post::where('published_at', '>=', $start)
       ->where('published_at', '<', $end)
-      ->with('categories')
-      ->orderBy('published_at', 'desc')
-      ->get();
+      ->with('categories');
+
+    // limit by category
+    if ($this->category) {
+      $query->whereHas('categories', function ($query) {
+        $query->where('id', $this->category->id);
+      });
+    }
+
+    $posts = $query->orderBy('published_at', 'desc')->get();
     return $this->preparePosts($posts);
   }
 
@@ -74,6 +87,10 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     $this->year = $this->param($this->property('yearParam'));
     $this->month = $this->param($this->property('monthParam'));
     $this->day = $this->param($this->property('dayParam'));
+    if ($this->param($this->property('categoryParam'))) {
+      $this->category = Category::where('slug', $this->param($this->property('categoryParam')))->first();
+      $this->page['category'] = $this->category;
+    }
   }
 
 
@@ -95,6 +112,11 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     }
 
     if (!$this->isInRange()) {
+      return Redirect::to('404');
+    }
+
+    if ($this->param($this->property('categoryParam')) && !$this->category) {
+      // category is set but doesn't exist
       return Redirect::to('404');
     }
 
@@ -126,6 +148,12 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
         'title'             => 'Day param',
         'description'       => 'URL parameter to get day from',
         'default'           => 'day',
+        'type'              => 'string',
+      ],
+      'categoryParam' => [
+        'title'             => 'Category param',
+        'description'       => 'URL parameter to get category slug from',
+        'default'           => '',
         'type'              => 'string',
       ],
       'disqusComments' => [
