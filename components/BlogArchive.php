@@ -84,11 +84,11 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    * Figure out archive parameters and save them to properties
    */
   public function init() {
-    $this->year = $this->param($this->property('yearParam'));
-    $this->month = $this->param($this->property('monthParam'));
-    $this->day = $this->param($this->property('dayParam'));
-    if ($this->param($this->property('categoryParam'))) {
-      $this->category = Category::where('slug', $this->param($this->property('categoryParam')))->first();
+    $this->year = $this->property('yearParam');
+    $this->month = $this->property('monthParam');
+    $this->day = $this->property('dayParam');
+    if ($this->property('categoryParam')) {
+      $this->category = Category::where('slug', $this->property('categoryParam'))->first();
       $this->page['category'] = $this->category;
     }
   }
@@ -115,7 +115,7 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
       return Redirect::to('404');
     }
 
-    if ($this->param($this->property('categoryParam')) && !$this->category) {
+    if ($this->property('categoryParam') && !$this->category) {
       // category is set but doesn't exist
       return Redirect::to('404');
     }
