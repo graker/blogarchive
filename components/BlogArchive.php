@@ -133,26 +133,26 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
   public function defineProperties() {
     return [
       'yearParam' => [
-        'title'             => 'Year param',
-        'description'       => 'URL parameter to get year from',
-        'default'           => 'year',
+        'title'             => 'Year',
+        'description'       => 'Year to limit the archive',
+        'default'           => '',
         'type'              => 'string',
       ],
       'monthParam' => [
-        'title'             => 'Month param',
-        'description'       => 'URL parameter to get month from',
-        'default'           => 'month',
+        'title'             => 'Month',
+        'description'       => 'Month to limit the archive',
+        'default'           => '',
         'type'              => 'string',
       ],
       'dayParam' => [
-        'title'             => 'Day param',
-        'description'       => 'URL parameter to get day from',
-        'default'           => 'day',
+        'title'             => 'Day',
+        'description'       => 'Day to limit the archive',
+        'default'           => '',
         'type'              => 'string',
       ],
       'categoryParam' => [
-        'title'             => 'Category param',
-        'description'       => 'URL parameter to get category slug from',
+        'title'             => 'Category',
+        'description'       => 'Category slug to limit the archive',
         'default'           => '',
         'type'              => 'string',
       ],
