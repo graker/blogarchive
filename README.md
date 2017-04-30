@@ -9,9 +9,9 @@ in a table manner, sorted by published date and grouped by months.
 * Enable the plugin
 * Create a page with year (required), month (optional) and day (optional) parameters, for example, set page path like this: `/news/:year/:month?/:day?`
 * Add blogArchive component to this page
-* In component settings, set up names of year, month and day parameters
+* In component settings, set up year, month and day parameters the usual way
+* You can also use category parameter to set category slug to limit archive to this category
 * Select category and post pages for links to these pages from archive to work
-* In the Links group
 * If your blog comments are implemented with Disqus, check the Disqus Comments box to add comments count column to the archive table
 * Output the component on your page as usual
 
