@@ -6,8 +6,6 @@ use Cms\Classes\Page as CmsPage;
 use Cms\Classes\Theme;
 use RainLab\Pages\Classes\MenuItem;
 
-use Log;
-
 /**
  * Class SitemapProvider
  * XML sitemap integration
