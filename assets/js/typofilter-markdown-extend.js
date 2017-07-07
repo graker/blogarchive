@@ -4,7 +4,7 @@
  */
 
 +function ($) {
-  $(document).ready(function () {
+  $(document).one('ready', function () {
     var editor = $('[data-control="markdowneditor"]').data('oc.markdownEditor');
 
     var button = {
