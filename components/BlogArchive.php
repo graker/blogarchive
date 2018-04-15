@@ -104,20 +104,20 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     $day = (!$this->day) ? '1' : $this->day;
 
     if (!ctype_digit($year) || !ctype_digit($month) || !ctype_digit($day)) {
-      return Redirect::to('404');
+      return $this->controller->run('404');
     }
 
     if (!checkdate($month, $day, $year)) {
-      return Redirect::to('404');
+      return $this->controller->run('404');
     }
 
     if (!$this->isInRange()) {
-      return Redirect::to('404');
+      return $this->controller->run('404');
     }
 
     if ($this->property('categoryParam') && !$this->category) {
       // category is set but doesn't exist
-      return Redirect::to('404');
+      return $this->controller->run('404');
     }
 
     $this->setupPager();
@@ -135,19 +135,19 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
       'yearParam' => [
         'title'             => 'Year',
         'description'       => 'Year to limit the archive',
-        'default'           => '',
+        'default'           => '{{ :year }}',
         'type'              => 'string',
       ],
       'monthParam' => [
         'title'             => 'Month',
         'description'       => 'Month to limit the archive',
-        'default'           => '',
+        'default'           => '{{ :month }}',
         'type'              => 'string',
       ],
       'dayParam' => [
         'title'             => 'Day',
         'description'       => 'Day to limit the archive',
-        'default'           => '',
+        'default'           => '{{ :day }}',
         'type'              => 'string',
       ],
       'categoryParam' => [
@@ -261,14 +261,14 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     $first_date = self::getFirstDate();
     if (!$this->month) $first_date->month(1);
     if (!$this->day) $first_date->day(1);
-    $now = new Carbon();
     $year = $this->year;
     $month = (!$this->month) ? '1' : $this->month;
     $day = (!$this->day) ? '1' : $this->day;
     $current = new Carbon();
     $current->setDate($year, $month, $day);
     $current->setTime(0, 0);
-    return (($first_date->getTimestamp() <= $current->getTimestamp()) && ($current->getTimestamp() <= $now->getTimestamp()));
+    $currentDateInRange = $current->between($first_date, Carbon::now(), true);
+    return $currentDateInRange;    
   }
 
 
