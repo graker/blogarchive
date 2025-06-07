@@ -8,6 +8,7 @@ namespace Graker\BlogArchive\Classes;
 
 use Carbon\Carbon;
 use Cms\Classes\Controller;
+use Illuminate\Support\Facades\App;
 
 class ArchivePager
 {
@@ -107,26 +108,26 @@ class ArchivePager
     if ($first_date->getTimestamp() < $current_date->getTimestamp()) {
       $previous_date = $current_date->copy();
       $previous_date->subMonth(1);
-      $this->previous_text = $previous_date->formatLocalized('%B') . ', ' . $previous_date->year;
+      $this->previous_text = $previous_date->locale(App::getLocale())->translatedFormat('F') . ', ' . $previous_date->year;
       $this->previous_url = $this->makePagerUrl(array(
         'year' => $previous_date->year,
         'month' => $previous_date->month,
       ));
     } else {
-      $this->previous_text = $current_date->formatLocalized('%B') . ', ' . $current_date->year;
+      $this->previous_text = $current_date->locale(App::getLocale())->translatedFormat('F') . ', ' . $current_date->year;
       $this->previous_url = '';
     }
     // next
     if (($this->current_year < date('Y')) || ($this->current_month < date('m'))) {
       $next_date = $current_date->copy();
       $next_date->addMonth(1);
-      $this->next_text = $next_date->formatLocalized('%B') . ', ' . $next_date->year;
+      $this->next_text = $next_date->locale(App::getLocale())->translatedFormat('F') . ', ' . $next_date->year;
       $this->next_url = $this->makePagerUrl(array(
         'year' => $next_date->year,
         'month' => $next_date->month,
       ));
     } else {
-      $this->next_text = $current_date->formatLocalized('%B') . ', ' . $current_date->year;
+      $this->next_text = $current_date->locale(App::getLocale())->translatedFormat('F') . ', ' . $current_date->year;
       $this->next_url = '';
     }
   }
@@ -142,14 +143,14 @@ class ArchivePager
     if ($first_date->getTimestamp() < $current_date->getTimestamp()) {
       $previous_date = $current_date->copy();
       $previous_date->subDay(1);
-      $this->previous_text = $previous_date->formatLocalized('%d') . ' ' . $previous_date->formatLocalized('%B') . ', ' . $previous_date->year;
+      $this->previous_text = $previous_date->formatLocalized('%d') . ' ' . $previous_date->locale(App::getLocale())->translatedFormat('F') . ', ' . $previous_date->year;
       $this->previous_url = $this->makePagerUrl(array(
         'year' => $previous_date->year,
         'month' => $previous_date->month,
         'day' => $previous_date->day,
       ));
     } else {
-      $this->previous_text = $current_date->formatLocalized('%d') . ' ' . $current_date->formatLocalized('%B') . ', ' . $current_date->year;
+      $this->previous_text = $current_date->formatLocalized('%d') . ' ' . $current_date->locale(App::getLocale())->translatedFormat('F') . ', ' . $current_date->year;
       $this->previous_url = '';
     }
     // next
@@ -158,14 +159,14 @@ class ArchivePager
     if ($this->current_date->getTimestamp() < $today->getTimestamp()) {
       $next_date = $current_date->copy();
       $next_date->addDay(1);
-      $this->next_text = $next_date->formatLocalized('%d') . ' ' . $next_date->formatLocalized('%B') . ', ' . $next_date->year;
+      $this->next_text = $next_date->formatLocalized('%d') . ' ' . $next_date->locale(App::getLocale())->translatedFormat('F') . ', ' . $next_date->year;
       $this->next_url = $this->makePagerUrl(array(
         'year' => $next_date->year,
         'month' => $next_date->month,
         'day' => $next_date->day,
       ));
     } else {
-      $this->next_text = $current_date->formatLocalized('%d') . ' ' . $current_date->formatLocalized('%B') . ', ' . $current_date->year;
+      $this->next_text = $current_date->formatLocalized('%d') . ' ' . $current_date->locale(App::getLocale())->translatedFormat('F') . ', ' . $current_date->year;
       $this->next_url = '';
     }
   }

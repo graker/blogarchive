@@ -8,8 +8,7 @@ use Graker\BlogArchive\Classes\ArchiveTrait;
 use RainLab\Blog\Models\Category;
 use Rainlab\Blog\Models\Post;
 use Cms\Classes\Page;
-use App;
-use Redirect;
+use Illuminate\Support\Facades\App;
 
 class BlogArchive extends \Cms\Classes\ComponentBase {
 
@@ -281,7 +280,7 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    */
   protected function getMonthName($date = '') {
     $d = new Carbon($date);
-    return $d->formatLocalized('%B');
+    return $d->locale(App::getLocale())->translatedFormat('F');
   }
 
 
