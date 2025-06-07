@@ -7,16 +7,22 @@ in a table manner, sorted by published date and grouped by months.
 ## How to use
 
 * Enable the plugin
-* Create a page with year (required), month (optional) and day (optional) parameters
+* Create a page with year (required), month (optional) and day (optional) parameters, for example, set page path like this: `/news/:year/:month?/:day?`
 * Add blogArchive component to this page
-* In component settings, set up names of year, month and day parameters
+* In component settings, set up year, month and day parameters the usual way
+* You can also use category parameter to set category slug to limit archive to this category
 * Select category and post pages for links to these pages from archive to work
-* In the Links group
 * If your blog comments are implemented with Disqus, check the Disqus Comments box to add comments count column to the archive table
 * Output the component on your page as usual
 
 Note that to output translated month names via `Carbon` in the archive table, the component will use `setlocale()` to set the application locale.
 You can disable this feature in `config/config.php` file of the plugin (set `setLocaleForCarbon` value to `FALSE` in the overridden config file).
+
+### Blog excerpts and Markdown
+
+By default, only Post text is processed by Blog plugin with Markdown filter. As for Post excerpt, it is saved as is without markdown support. So you have to either type excerpt without markdown or output it using pipe filter: `{{ excerpt | md }}`. To improve this behavior, post.beforeSave listener is added in BlogArchive plugin. In this listener, post excerpt will be processed with Markdown filter whenever post is being saved.
+
+In addition, to process old post excerpts, artisan command `blogarchive:updateexcerpts` had been added. It would find all existing posts with non-empty excerpt fields and re-save them.
 
 ### Random posts component
 

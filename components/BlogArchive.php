@@ -4,12 +4,16 @@ namespace Graker\BlogArchive\Components;
 
 use Carbon\Carbon;
 use Graker\BlogArchive\Classes\ArchivePager;
+use Graker\BlogArchive\Classes\ArchiveTrait;
+use RainLab\Blog\Models\Category;
 use Rainlab\Blog\Models\Post;
 use Cms\Classes\Page;
 use App;
 use Redirect;
 
 class BlogArchive extends \Cms\Classes\ComponentBase {
+
+  use ArchiveTrait;
 
   /**
    * @var string year to display archive for
@@ -25,6 +29,11 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    * @var string day to display archive for
    */
   public $day = '';
+
+  /**
+   * @var Category if set, category to limit posts output
+   */
+  public $category = NULL;
 
   /*
    * Vars for mini-pager
@@ -54,11 +63,18 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
    */
   public function archivePosts() {
     list($start, $end) = $this->getCurrentRange();
-    $posts = Post::where('published_at', '>=', $start)
+    $query = Post::where('published_at', '>=', $start)
       ->where('published_at', '<', $end)
-      ->with('categories')
-      ->orderBy('published_at', 'desc')
-      ->get();
+      ->with('categories');
+
+    // limit by category
+    if ($this->category) {
+      $query->whereHas('categories', function ($query) {
+        $query->where('id', $this->category->id);
+      });
+    }
+
+    $posts = $query->orderBy('published_at', 'desc')->get();
     return $this->preparePosts($posts);
   }
 
@@ -71,6 +87,10 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     $this->year = $this->property('yearParam');
     $this->month = $this->property('monthParam');
     $this->day = $this->property('dayParam');
+    if ($this->property('categoryParam')) {
+      $this->category = Category::where('slug', $this->property('categoryParam'))->first();
+      $this->page['category'] = $this->category;
+    }
   }
 
 
@@ -84,11 +104,20 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     $day = (!$this->day) ? '1' : $this->day;
 
     if (!ctype_digit($year) || !ctype_digit($month) || !ctype_digit($day)) {
-      return Redirect::to('404');
+      return $this->controller->run('404');
     }
 
     if (!checkdate($month, $day, $year)) {
-      return Redirect::to('404');
+      return $this->controller->run('404');
+    }
+
+    if (!$this->isInRange()) {
+      return $this->controller->run('404');
+    }
+
+    if ($this->property('categoryParam') && !$this->category) {
+      // category is set but doesn't exist
+      return $this->controller->run('404');
     }
 
     $this->setupPager();
@@ -104,21 +133,27 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
   public function defineProperties() {
     return [
       'yearParam' => [
-        'title'             => 'Year param',
-        'description'       => 'URL parameter to get year from',
-        'default'           => 'year',
+        'title'             => 'Year',
+        'description'       => 'Year to limit the archive',
+        'default'           => '{{ :year }}',
         'type'              => 'string',
       ],
       'monthParam' => [
-        'title'             => 'Month param',
-        'description'       => 'URL parameter to get month from',
-        'default'           => 'month',
+        'title'             => 'Month',
+        'description'       => 'Month to limit the archive',
+        'default'           => '{{ :month }}',
         'type'              => 'string',
       ],
       'dayParam' => [
-        'title'             => 'Day param',
-        'description'       => 'URL parameter to get day from',
-        'default'           => 'day',
+        'title'             => 'Day',
+        'description'       => 'Day to limit the archive',
+        'default'           => '{{ :day }}',
+        'type'              => 'string',
+      ],
+      'categoryParam' => [
+        'title'             => 'Category',
+        'description'       => 'Category slug to limit the archive',
+        'default'           => '',
         'type'              => 'string',
       ],
       'disqusComments' => [
@@ -214,7 +249,28 @@ class BlogArchive extends \Cms\Classes\ComponentBase {
     $this->next_text = $pager->next_text;
     $this->next_url = $pager->next_url;
   }
-  
+
+
+  /**
+   *
+   * Checks if current date in in range of ($first_date:time())
+   *
+   * @return bool
+   */
+  protected function isInRange() {
+    $first_date = self::getFirstDate();
+    if (!$this->month) $first_date->month(1);
+    if (!$this->day) $first_date->day(1);
+    $year = $this->year;
+    $month = (!$this->month) ? '1' : $this->month;
+    $day = (!$this->day) ? '1' : $this->day;
+    $current = new Carbon();
+    $current->setDate($year, $month, $day);
+    $current->setTime(0, 0);
+    $currentDateInRange = $current->between($first_date, Carbon::now(), true);
+    return $currentDateInRange;    
+  }
+
 
   /**
    *
